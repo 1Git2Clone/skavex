@@ -80,8 +80,11 @@ jobs:
       # The suite asserts behaviour, not snapshots: that braces in prose survive
       # as text, that KaTeX reaches the server-rendered HTML, and that generated
       # modules compile. See test/ for what each case is guarding.
+      #
+      # Run with coverage so vitest.config.js's thresholds gate here, on the pull
+      # request, rather than only when the badge is regenerated after a merge.
       - name: Test
-        run: nix develop -c pnpm test
+        run: nix develop -c pnpm test:coverage
 
       # The demo is built and driven in a real browser here, so this covers both:
       # that the published page works, and that the library's output — MathML,

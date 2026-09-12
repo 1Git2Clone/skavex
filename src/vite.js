@@ -10,13 +10,18 @@ import { compile } from './compile.js';
  * `svelte.config.js`:
  *
  * ```js
- * // svelte.config.js
+ * // vite.config.js
  * import { skavex } from '@skavex/skavex/vite';
+ * import { sveltekit } from '@sveltejs/kit/vite';
  *
  * export default {
- *   extensions: ['.svelte', '.md'],
- *   vitePlugins: [skavex({ layout: '/src/lib/Layout.svelte' })]
+ *   plugins: [skavex({ layout: '/src/lib/Layout.svelte' }), sveltekit()]
  * };
+ * ```
+ *
+ * ```js
+ * // svelte.config.js
+ * export default { extensions: ['.svelte', '.md'] };
  * ```
  *
  * Leaving `.md` out of `extensions` is the one failure worth knowing in

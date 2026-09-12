@@ -53,6 +53,16 @@ jobs:
         env:
           BASE_PATH: /${{ github.repository }}
 
+      # Self-hosted because codecov and its equivalents need the repository to be
+      # on GitHub, GitLab or Bitbucket, and this one is on a Forgejo instance.
+      # Writing the file into the published directory means shields.io reads it
+      # back through its endpoint API, with no third party seeing the repository
+      # and nothing to keep in sync.
+      - name: Coverage badge
+        run: |
+          nix develop -c pnpm test:coverage
+          nix develop -c node scripts/coverage-badge.js demo/dist/coverage.json
+
       - name: Publish
         run: |
           dest="/pages/$GITHUB_REPOSITORY"

@@ -1,5 +1,18 @@
 # skavex
 
+[![CI Icon]][CI Status]&emsp;[![Coverage Icon]][Coverage Status]&emsp;[![npm Icon]][npm Status]&emsp;[![Demo Icon]][Demo]&emsp;[![License Icon]][License]
+
+[CI Icon]: https://git.hu-tao.dev/skavex/skavex/badges/workflows/ci.yml/badge.svg
+[CI Status]: https://git.hu-tao.dev/skavex/skavex/actions
+[Coverage Icon]: https://img.shields.io/endpoint?url=https%3A%2F%2Fpages.hu-tao.dev%2Fskavex%2Fskavex%2Fcoverage.json
+[Coverage Status]: https://pages.hu-tao.dev/skavex/skavex/coverage.json
+[npm Icon]: https://img.shields.io/npm/v/@skavex/skavex
+[npm Status]: https://www.npmjs.com/package/@skavex/skavex
+[Demo Icon]: https://img.shields.io/badge/demo-live-7aa2f7
+[Demo]: https://pages.hu-tao.dev/skavex/skavex/
+[License Icon]: https://img.shields.io/badge/license-MIT-blue.svg
+[License]: https://git.hu-tao.dev/skavex/skavex/src/branch/main/LICENSE
+
 **Server-rendered Markdown + LaTeX for Svelte.** A Vite plugin that compiles
 `.md` files into real Svelte components — so your posts are HTML on first paint,
 with no client-side markdown parsing, no layout shift, and nothing a crawler has
@@ -30,7 +43,7 @@ unified version is yours to choose.
 ## How it compares
 
 Measured, not claimed — `pnpm bench` regenerates every number, and CI fails if
-one regresses. Full breakdown with the method in [BENCHMARKS.md](BENCHMARKS.md).
+one regresses. Full breakdown with the method in [BENCHMARKS.md](https://git.hu-tao.dev/skavex/skavex/src/branch/main/BENCHMARKS.md).
 
 |                                 | skavex | mdsvex + remark-math 3 | mdsvex + remark-math 6 |
 | ------------------------------- | ------ | ---------------------- | ---------------------- |
@@ -231,10 +244,13 @@ components. Two details are load-bearing, and both are tested:
 ## Development
 
 ```sh
-nix develop       # node + pnpm, the same versions CI uses
+nix develop          # node, pnpm and browsers, the same versions CI uses
 pnpm install
-pnpm test
-pnpm lint
+pnpm test            # unit suite
+pnpm test:coverage   # with thresholds enforced
+pnpm test:e2e        # the demo, driven in a real browser
+pnpm bench           # comparison against mdsvex
+pnpm demo            # the editor, locally
 ```
 
 The suite asserts behaviour rather than snapshots: that braces survive as text,
