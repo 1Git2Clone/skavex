@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		// The source is JavaScript; the types are the JSDoc on it. This config
+		// exists only to turn that JSDoc into .d.ts files at publish time, so
+		// consumers with checkJs or strict get real types instead of implicit any.
+		"allowJs": true,
+		"checkJs": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"outDir": "types",
+		"rootDir": "src",
+
+		"target": "es2022",
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"strict": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": ["src/**/*.js"]
+}

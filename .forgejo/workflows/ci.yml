@@ -70,6 +70,13 @@ jobs:
       - name: Lint
         run: nix develop -c pnpm lint
 
+      # The source is JavaScript and its types are the JSDoc on it, so this is
+      # the only thing that checks either. It also emits the .d.ts that ship to
+      # consumers, which is why a JSDoc mistake has to fail here rather than in
+      # somebody else's `svelte-check`.
+      - name: Types
+        run: nix develop -c pnpm check
+
       # The suite asserts behaviour, not snapshots: that braces in prose survive
       # as text, that KaTeX reaches the server-rendered HTML, and that generated
       # modules compile. See test/ for what each case is guarding.

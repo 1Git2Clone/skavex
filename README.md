@@ -35,19 +35,32 @@ pnpm add -D @skavex/skavex
 
 ## Use
 
+skavex is a Vite plugin, so it goes in `vite.config.js`:
+
 ```js
-// svelte.config.js
+// vite.config.js
 import { skavex } from '@skavex/skavex/vite';
+import { sveltekit } from '@sveltejs/kit/vite';
 
 export default {
-	// Both plugins must agree on which files are documents.
-	extensions: ['.svelte', '.md'],
-	vitePlugins: [
+	plugins: [
+		// Before sveltekit(): skavex produces Svelte source, which the Svelte
+		// plugin then compiles.
 		skavex({
 			layout: '/src/lib/components/PostLayout.svelte',
 			components: '/src/lib/components/md'
-		})
+		}),
+		sveltekit()
 	]
+};
+```
+
+and `svelte.config.js` has to recognise the extension:
+
+```js
+// svelte.config.js
+export default {
+	extensions: ['.svelte', '.md']
 };
 ```
 

@@ -64,7 +64,10 @@ const DEFAULT_KATEX_OPTIONS = { output: 'htmlAndMathml', strict: false };
  * around it — useful for tests, feeds and search indexes.
  *
  * @param {SkavexOptions} [options]
- * @returns {import('unified').Processor} A configured processor.
+ * @returns {import('unified').Processor<any, any, any, any, string>} A processor
+ *   whose `process` yields a string. The generics are loose on purpose: the
+ *   chain is assembled conditionally, so its precise instantiation depends on
+ *   which options were passed.
  */
 export function createProcessor(options = {}) {
 	const { gfm = true, math = true, remarkPlugins = [], rehypePlugins = [] } = options;
@@ -100,7 +103,14 @@ export function createProcessor(options = {}) {
 
 	processor.use(rehypeStringify, { allowDangerousHtml: true });
 
-	return processor;
+	// The compiler tracks a processor's result type through a chain of `.use()`
+	// expressions, not through separate statements — and the statements above are
+	// conditional, so they cannot be a chain. It therefore still believes this
+	// processor compiles to `undefined` when rehype-stringify has in fact made it
+	// a string. The cast states what the assembled pipeline actually produces.
+	return /** @type {import('unified').Processor<any, any, any, any, string>} */ (
+		/** @type {unknown} */ (processor)
+	);
 }
 
 /**
