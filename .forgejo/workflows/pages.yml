@@ -1,0 +1,60 @@
+# ==============================================================================
+# Pages — the live demo at pages.hu-tao.dev/skavex/skavex
+# ==============================================================================
+# The editor in demo/ is the library's own argument: markdown and LaTeX go in,
+# rendered HTML and real Svelte component source come out, in a browser, from
+# the same `render` and `buildModule` a consumer's build calls.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  pages:
+    name: Build and publish the demo
+    # Same image as ci.yml, for the same reason: node and pnpm come from
+    # flake.nix, so the demo is built with the toolchain the tests ran under.
+    # No node in the container means no `uses:` — hence the manual checkout.
+    runs-on: nix
+
+    container:
+      # The one volume the runner's allow-list permits, and the same one caddy
+      # serves read-only. Any other entry here is refused outright. See
+      # modules/containers/forgejo-runner.nix in the vps repo.
+      volumes:
+        - pages_data:/pages
+
+    env:
+      NIX_CONFIG: experimental-features = nix-command flakes
+
+    steps:
+      - name: Checkout
+        run: |
+          git init -q -b main .
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}"
+          git fetch -q --prune --depth=1 origin "+refs/heads/*:refs/remotes/origin/*"
+          git checkout -q --detach "$GITHUB_SHA"
+
+      - name: Install
+        run: nix develop -c pnpm install --frozen-lockfile
+
+      # The URL layout IS the directory layout — nothing rewrites — so every
+      # asset URL has to carry the /<owner>/<repo> prefix the site is served
+      # under. Without this the page loads and then requests /assets/... at the
+      # host root and renders unstyled.
+      - name: Build
+        run: nix develop -c pnpm run demo:build
+        env:
+          BASE_PATH: /${{ github.repository }}
+
+      - name: Publish
+        run: |
+          dest="/pages/$GITHUB_REPOSITORY"
+          rm -rf "$dest" && mkdir -p "$dest"
+          cp -r demo/dist/. "$dest/"
