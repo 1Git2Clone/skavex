@@ -12,14 +12,49 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
  * Calling the hook as a plain function would throw before reaching anything
  * worth asserting.
  *
- * @param {any} plugin
+ * @param {import('vite').Plugin} plugin
  * @param {string} code
  * @param {string} id
  * @param {{warn?: (message: string) => void}} [context]
- * @returns {Promise<any>}
+ * @returns {Promise<import('vite').Rollup.TransformResult>}
  */
-function transform(plugin, code, id, context = {}) {
-	return plugin.transform.call({ warn: context.warn ?? (() => {}) }, code, id);
+async function transform(plugin, code, id, context = {}) {
+	// Vite allows `transform` to be an object with a `handler`; skavex declares
+	// the plain function form, and asserting that keeps the narrowing honest
+	// rather than casting past it.
+	const hook = plugin.transform;
+	if (typeof hook !== 'function')
+		throw new Error('skavex should declare transform as a function');
+
+	return hook.call(
+		/** @type {import('vite').Rollup.TransformPluginContext} */ ({
+			warn: context.warn ?? (() => {})
+		}),
+		code,
+		id,
+		{ moduleType: 'js', ssr: false }
+	);
+}
+
+/**
+ * Transform a document and insist something came back.
+ *
+ * Every test using this is about the generated code, so a null result — the
+ * plugin declining the file — should fail with that sentence rather than with
+ * "possibly null" further down.
+ *
+ * @param {import('vite').Plugin} plugin
+ * @param {string} code
+ * @param {string} id
+ * @param {{warn?: (message: string) => void}} [context]
+ * @returns {Promise<{code: string, map?: unknown}>}
+ */
+async function transformed(plugin, code, id, context = {}) {
+	const result = await transform(plugin, code, id, context);
+	if (!result || typeof result === 'string' || typeof result.code !== 'string') {
+		throw new Error(`the plugin returned no code for ${id}`);
+	}
+	return /** @type {{code: string, map?: unknown}} */ (result);
 }
 
 describe('the Vite plugin', () => {
@@ -37,7 +72,7 @@ describe('the Vite plugin', () => {
 	});
 
 	it('compiles a document into Svelte source', async () => {
-		const result = await transform(
+		const result = await transformed(
 			skavex(),
 			'---\ntitle: Post\n---\n\n## Heading\n\n$x^2$\n',
 			'/src/posts/a.md'
@@ -52,14 +87,14 @@ describe('the Vite plugin', () => {
 	it('emits no source map, deliberately', async () => {
 		// The generated Svelte bears no line-for-line relation to the markdown, so
 		// an inaccurate map would be worse than none.
-		const result = await transform(skavex(), '# Title\n', '/src/a.md');
+		const result = await transformed(skavex(), '# Title\n', '/src/a.md');
 		expect(result.map).toBeNull();
 	});
 
 	it('matches on the path, not on the id Vite hands it', async () => {
 		// Vite appends queries such as ?import. Matching the raw id would mean a
 		// document silently passing through untransformed.
-		const result = await transform(skavex(), '# Title\n', '/src/a.md?import');
+		const result = await transformed(skavex(), '# Title\n', '/src/a.md?import');
 		expect(result.code).toContain('<h1');
 	});
 
@@ -67,7 +102,7 @@ describe('the Vite plugin', () => {
 		const plugin = skavex({ extensions: ['.svx'] });
 
 		expect(await transform(plugin, '# Title\n', '/src/a.md')).toBeNull();
-		expect((await transform(plugin, '# Title\n', '/src/a.svx')).code).toContain('<h1');
+		expect((await transformed(plugin, '# Title\n', '/src/a.svx')).code).toContain('<h1');
 	});
 
 	it('warns once per duplicate basename, not once per document', async () => {
@@ -90,7 +125,12 @@ describe('the Vite plugin', () => {
 		const warn = vi.fn();
 		const plugin = skavex({ components: './fixtures/dupes' });
 
-		/** @type {any} */ (plugin).configResolved({ root: ROOT });
+		const configResolved = plugin.configResolved;
+		if (typeof configResolved !== 'function') throw new Error('expected a configResolved hook');
+		configResolved.call(
+			/** @type {never} */ (undefined),
+			/** @type {import('vite').ResolvedConfig} */ (/** @type {unknown} */ ({ root: ROOT }))
+		);
 		await transform(plugin, 'text\n', '/src/a.md', { warn });
 
 		expect(warn).toHaveBeenCalledTimes(1);

@@ -18,6 +18,7 @@ export { findComponents, selectUsedComponents, resolveComponentsDir } from './co
 
 /**
  * @typedef {import('./browser.js').SkavexOptions} SkavexOptions
+ * @typedef {import('./browser.js').DocumentMetadata} DocumentMetadata
  * @typedef {import('./components.js').DiscoveredComponent} DiscoveredComponent
  * @typedef {import('./headings.js').HeadingEntry} HeadingEntry
  */

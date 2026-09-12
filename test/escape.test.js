@@ -8,6 +8,7 @@ import { escapeText } from '../src/escape.js';
  * output is not merely a string but something the compiler accepts.
  *
  * @param {string} source
+ * @returns {import('svelte/compiler').Warning[]} Whatever the compiler objected to.
  */
 function svelteWarnings(source) {
 	return compileSvelte(source, { name: 'Doc', generate: 'server' }).warnings;
@@ -60,8 +61,12 @@ describe('brace escaping through the pipeline', () => {
 	});
 
 	it('leaves markup injected by a plugin untouched', async () => {
-		/** A plugin that replaces a paragraph with a component. */
-		const inject = () => (tree) => {
+		/**
+		 * A plugin that replaces a paragraph with a component.
+		 *
+		 * @returns {(tree: import('mdast').Root) => void}
+		 */
+		const inject = () => (/** @type {import('mdast').Root} */ tree) => {
 			tree.children[0] = {
 				type: 'html',
 				value: '<Widget count={3}>{@html `<b>hi</b>`}</Widget>'

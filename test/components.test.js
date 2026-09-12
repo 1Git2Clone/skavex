@@ -8,8 +8,12 @@ import { componentNode, rawHtmlExpression } from '../src/utils.js';
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const COMPONENTS_DIR = './fixtures/components';
 
-/** A plugin that turns every code fence into a `<CodeBlock>`. */
-const injectCodeBlock = () => (tree) => {
+/**
+ * A plugin that turns every code fence into a `<CodeBlock>`.
+ *
+ * @returns {(tree: import('mdast').Root) => void}
+ */
+const injectCodeBlock = () => (/** @type {import('mdast').Root} */ tree) => {
 	tree.children = tree.children.map((node) =>
 		node.type === 'code'
 			? componentNode(

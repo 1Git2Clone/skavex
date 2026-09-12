@@ -36,11 +36,11 @@ function watchForFailures(page) {
 async function reporting(page, assertion) {
 	try {
 		await assertion();
-	} catch (/** @type {any} */ error) {
+	} catch (error) {
 		const source = await page.getByLabel('Markdown').inputValue();
 		const rendered = await page.locator('.prose').innerHTML();
 		throw new Error(
-			`${error.message}\n` +
+			`${error instanceof Error ? error.message : String(error)}\n` +
 				`--- editor held ---\n${JSON.stringify(source)}\n` +
 				`--- pane held ---\n${rendered.slice(0, 1500)}`,
 			{ cause: error }
@@ -64,7 +64,7 @@ async function reporting(page, assertion) {
  */
 async function setSource(page, value) {
 	await page.getByLabel('Markdown').evaluate((element, text) => {
-		/** @type {HTMLTextAreaElement} */ (element).value = text;
+		/** @type {globalThis.HTMLTextAreaElement} */ (element).value = text;
 		element.dispatchEvent(new Event('input', { bubbles: true }));
 	}, value);
 }

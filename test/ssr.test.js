@@ -96,6 +96,7 @@ describe('server rendering', () => {
 	});
 
 	it('renders a component a plugin injected', async () => {
+		/** @returns {(tree: import('mdast').Root) => void} */
 		const injectCallout = () => (tree) => {
 			tree.children[0] = { type: 'html', value: '<Callout>hello from a component</Callout>' };
 		};

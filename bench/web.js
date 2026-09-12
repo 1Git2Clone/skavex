@@ -65,9 +65,13 @@ async function buildPages() {
 
 	const { html } = await render(source);
 
-	/** @param {string} id */
+	/**
+	 * @param {string} id
+	 * @returns {Promise<string>}
+	 */
 	const compileWith = async (id) => {
-		const engine = /** @type {any} */ (ENGINES.find((candidate) => candidate.id === id));
+		const engine = ENGINES.find((candidate) => candidate.id === id);
+		if (!engine) throw new Error(`no engine called "${id}"`);
 		// Drop the Svelte blocks; what is being served is a plain page.
 		return (await engine.compile(source)).replace(/<script[\s\S]*?<\/script>/g, '');
 	};
@@ -128,7 +132,14 @@ async function serve(pages) {
 	});
 
 	await new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(undefined)));
-	const { port } = /** @type {import('node:net').AddressInfo} */ (server.address());
+	// address() is string | AddressInfo | null: a pipe, a TCP socket, or nothing
+	// bound yet. Only the second has a port, and asserting past the other two
+	// would produce `http://127.0.0.1:undefined`.
+	const address = server.address();
+	if (address === null || typeof address === 'string') {
+		throw new Error('the benchmark server did not bind a TCP port');
+	}
+	const { port } = address;
 
 	return {
 		url: `http://127.0.0.1:${port}`,
@@ -151,25 +162,44 @@ async function serve(pages) {
  */
 async function audit(url, port) {
 	const result = await lighthouse(url, { port, output: 'json', logLevel: 'silent' });
-	const lhr = /** @type {any} */ (result).lhr;
+	if (!result) throw new Error(`lighthouse returned nothing for ${url}`);
+	const lhr = result.lhr;
 
-	/** @param {string} id */
-	const metric = (id) => lhr.audits[id].numericValue;
+	/**
+	 * @param {string} id
+	 * @returns {number}
+	 */
+	const metric = (id) => Number(lhr.audits[id]?.numericValue);
 
-	const scripts = lhr.audits['network-requests'].details.items.filter(
-		(/** @type {any} */ item) => item.resourceType === 'Script'
-	);
+	/**
+	 * Bytes transferred for one resource type, from the network-requests audit.
+	 *
+	 * That audit's `details` is a union across every table shape Lighthouse
+	 * defines, so its rows are reached through an explicitly named row type
+	 * rather than by widening the whole report.
+	 *
+	 * @param {string} resourceType
+	 * @returns {number}
+	 */
+	const transferredAs = (resourceType) => {
+		const details = lhr.audits['network-requests']?.details;
+		if (!details || !('items' in details)) return 0;
+
+		const rows = /** @type {{resourceType?: string, transferSize?: number}[]} */ (
+			details.items
+		);
+		return rows
+			.filter((row) => row.resourceType === resourceType)
+			.reduce((sum, row) => sum + (row.transferSize ?? 0), 0);
+	};
 
 	return {
-		score: lhr.categories.performance.score,
+		score: Number(lhr.categories.performance.score),
 		cls: metric('cumulative-layout-shift'),
 		lcp: metric('largest-contentful-paint'),
 		tbt: metric('total-blocking-time'),
 		bytes: metric('total-byte-weight'),
-		scripts: scripts.reduce(
-			(/** @type {number} */ sum, /** @type {any} */ item) => sum + (item.transferSize ?? 0),
-			0
-		)
+		scripts: transferredAs('Script')
 	};
 }
 
@@ -180,7 +210,22 @@ const server = await serve(pages);
 const port = 9222 + (process.pid % 500);
 const browser = await chromium.launch({ args: [`--remote-debugging-port=${port}`] });
 
-/** @type {any[]} */
+/**
+ * One page's audit, as the table prints it.
+ *
+ * @typedef {object} PageAudit
+ * @property {string} route      Path the page was served at.
+ * @property {string} label      How the table names it.
+ * @property {string} note       What a reader needs to read its numbers.
+ * @property {number} score      Lighthouse performance score, 0 to 1.
+ * @property {number} cls        Cumulative layout shift.
+ * @property {number} lcp        Largest contentful paint, in milliseconds.
+ * @property {number} tbt        Total blocking time, in milliseconds.
+ * @property {number} bytes      Total page weight.
+ * @property {number} scripts    Bytes of JavaScript, which is the figure at issue.
+ */
+
+/** @type {PageAudit[]} */
 const results = [];
 
 for (const [route, label, note] of [

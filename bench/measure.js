@@ -7,7 +7,7 @@
 import { compile as svelteCompile } from 'svelte/compiler';
 
 /**
- * @typedef {Object} Features
+ * @typedef {object} Features
  * @property {number} katex       KaTeX spans in the output. 0 means the maths silently did not render.
  * @property {number} mathml      MathML nodes — what a screen reader reads. 0 means the maths is invisible to one.
  * @property {number} headingIds  Headings given an id, i.e. anchors and a usable table of contents.
@@ -45,6 +45,15 @@ export function features(output) {
 }
 
 /**
+ * What one engine's timings came to.
+ *
+ * @typedef {object} Timing
+ * @property {number} msPerDoc       Median milliseconds to compile one document.
+ * @property {number} docsPerSecond  The same figure, inverted.
+ * @property {number} bytes          Size of the last output produced.
+ */
+
+/**
  * Median, which is what a shared CI runner calls for: one scheduling hiccup
  * moves a mean and leaves a median alone.
  *
@@ -74,7 +83,7 @@ export function median(values) {
  * @param {import('./engines.js').Engine[]} engines
  * @param {string[]} documents
  * @param {number} samples
- * @returns {Promise<Map<string, {msPerDoc: number, docsPerSecond: number, bytes: number}>>}
+ * @returns {Promise<Map<string, Timing>>} One entry per engine, keyed by id.
  */
 export async function timeAll(engines, documents, samples) {
 	for (const engine of engines) {
@@ -91,16 +100,21 @@ export async function timeAll(engines, documents, samples) {
 			const started = performance.now();
 			let bytes = 0;
 			for (const source of documents) bytes = (await engine.compile(source)).length;
-			/** @type {number[]} */ (timings.get(engine.id)).push(
-				(performance.now() - started) / documents.length
-			);
+			const samplesFor = timings.get(engine.id);
+			// Seeded for every engine above, so this cannot happen — which is why it
+			// should say so rather than be asserted away and resurface as a median
+			// computed over nothing.
+			if (!samplesFor) throw new Error(`no sample list for engine "${engine.id}"`);
+			samplesFor.push((performance.now() - started) / documents.length);
 			sizes.set(engine.id, bytes);
 		}
 	}
 
 	return new Map(
 		engines.map((engine) => {
-			const msPerDoc = median(/** @type {number[]} */ (timings.get(engine.id)));
+			const samplesFor = timings.get(engine.id);
+			if (!samplesFor) throw new Error(`no sample list for engine "${engine.id}"`);
+			const msPerDoc = median(samplesFor);
 			return [
 				engine.id,
 				{ msPerDoc, docsPerSecond: 1000 / msPerDoc, bytes: sizes.get(engine.id) ?? 0 }

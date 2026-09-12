@@ -14,11 +14,14 @@ import { escapeTemplateLiteral, getBareLinkFromParagraph } from '../src/utils.js
  * by default and why a plugin using this helper needs it too.
  *
  * @param {string} source
- * @returns {any[]}
+ * @returns {import('mdast').RootContent[]}
  */
 function parse(source) {
 	const processor = unified().use(remarkParse).use(remarkGfm);
-	return /** @type {any} */ (processor.runSync(processor.parse(source))).children;
+	// runSync is typed to return the generic `Node`; this pipeline is parse plus
+	// GFM, so what comes back really is an mdast root. A named type, not `any`.
+	const tree = /** @type {import('mdast').Root} */ (processor.runSync(processor.parse(source)));
+	return tree.children;
 }
 
 describe('getBareLinkFromParagraph', () => {
@@ -43,7 +46,13 @@ describe('getBareLinkFromParagraph', () => {
 		const [heading] = parse('## https://example.com\n');
 		expect(getBareLinkFromParagraph(heading)).toBeNull();
 		expect(getBareLinkFromParagraph(null)).toBeNull();
-		expect(getBareLinkFromParagraph({ type: 'paragraph' })).toBeNull();
+		// Deliberately malformed: a paragraph with no children cannot come out of
+		// remark, but an untyped JavaScript caller can construct one, and the
+		// function promises to return null rather than throw inside their build.
+		const childless = /** @type {import('mdast').Nodes} */ (
+			/** @type {unknown} */ ({ type: 'paragraph' })
+		);
+		expect(getBareLinkFromParagraph(childless)).toBeNull();
 	});
 });
 

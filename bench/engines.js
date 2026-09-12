@@ -35,12 +35,28 @@ import rehypeKatexLegacy from 'rehype-katex-legacy';
 import { compile as skavexCompile } from '../src/index.js';
 
 /**
- * @typedef {Object} Engine
+ * @typedef {object} Engine
  * @property {string} id      Stable key used in results.json.
  * @property {string} label   How the comparison table names it.
  * @property {string} note    What a reader needs to know to read its numbers.
  * @property {(source: string) => Promise<string>} compile Markdown in, Svelte source out.
  */
+
+/**
+ * Hand a plugin to mdsvex.
+ *
+ * mdsvex's types come from the unified 8 it bundles, so a plugin built against
+ * unified 11 is not assignable to them — the compiler is describing exactly
+ * the incompatibility this benchmark exists to measure. The cast is where that
+ * is stated out loud rather than smuggled in as `any`, and it is confined to
+ * this one function so nothing else in the file can quietly do the same.
+ *
+ * @param {unknown} plugin A remark or rehype plugin of any vintage.
+ * @returns {import('mdsvex').MdsvexOptions['remarkPlugins']} A list mdsvex accepts.
+ */
+function forMdsvex(plugin) {
+	return /** @type {import('mdsvex').MdsvexOptions['remarkPlugins']} */ ([plugin]);
+}
 
 /** @type {Engine[]} */
 export const ENGINES = [
@@ -74,8 +90,8 @@ export const ENGINES = [
 		compile: async (source) =>
 			(
 				await mdsvexCompile(source, {
-					remarkPlugins: [remarkMathLegacy],
-					rehypePlugins: [rehypeKatexLegacy]
+					remarkPlugins: forMdsvex(remarkMathLegacy),
+					rehypePlugins: forMdsvex(rehypeKatexLegacy)
 				})
 			)?.code ?? ''
 	},
@@ -86,8 +102,8 @@ export const ENGINES = [
 		compile: async (source) =>
 			(
 				await mdsvexCompile(source, {
-					remarkPlugins: [remarkMathModern],
-					rehypePlugins: [rehypeKatexModern]
+					remarkPlugins: forMdsvex(remarkMathModern),
+					rehypePlugins: forMdsvex(rehypeKatexModern)
 				})
 			)?.code ?? ''
 	}

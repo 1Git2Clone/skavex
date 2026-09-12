@@ -5,7 +5,7 @@ import { slugify } from './slug.js';
 /**
  * One heading, as a table of contents needs it.
  *
- * @typedef {Object} HeadingEntry
+ * @typedef {object} HeadingEntry
  * @property {string} id    Fragment assigned to the heading, from {@link slugify}.
  * @property {number} level 1 for `h1` through 6 for `h6`.
  * @property {string} text  Flattened text. Maths appears as its LaTeX source.
@@ -23,33 +23,34 @@ const HEADINGS = { h1: 1, h2: 2, h3: 3, h4: 4, h5: 5, h6: 6 };
  * is exactly what should reach the slug. Keeping the traversal here also keeps
  * the id derivation independent of a utility's version.
  *
- * @param {any} node
- * @returns {string}
+ * @param {import('hast').Nodes} node The subtree to flatten.
+ * @returns {string} Its text, with maths as its LaTeX source.
  */
 function textOf(node) {
 	if (node.type === 'text') return node.value;
-	if (!Array.isArray(node.children)) return '';
+	if (!('children' in node)) return '';
 	return node.children.map(textOf).join('');
 }
 
 /**
  * Is this the element remark-math leaves behind for an inline formula?
  *
- * @param {any} node
- * @returns {boolean}
+ * @param {import('hast').Nodes} node The node to test.
+ * @returns {boolean} True for the `<code class="math-inline">` remark-math emits.
  */
 function isInlineMath(node) {
 	if (node.type !== 'element') return false;
-	const className = node.properties?.className;
+	const className = node.properties.className;
 	return Array.isArray(className) && className.includes('math-inline');
 }
 
 /**
  * Render a heading's children to display markup, rendering any maths.
  *
- * @param {any} node
- * @param {Record<string, unknown>} katexOptions
- * @returns {string}
+ * @param {import('hast').Nodes} node The heading, or one of its descendants.
+ * @param {Record<string, unknown>} katexOptions The same options the body is
+ *   rendered with, so a formula looks identical in navigation.
+ * @returns {string} Display markup, maths already typeset.
  */
 function htmlOf(node, katexOptions) {
 	if (node.type === 'text') return node.value;
@@ -58,8 +59,8 @@ function htmlOf(node, katexOptions) {
 		return katex.renderToString(textOf(node), { ...katexOptions, throwOnError: false });
 	}
 
-	if (!Array.isArray(node.children)) return '';
-	return node.children.map((/** @type {any} */ child) => htmlOf(child, katexOptions)).join('');
+	if (!('children' in node)) return '';
+	return node.children.map((child) => htmlOf(child, katexOptions)).join('');
 }
 
 /**
@@ -79,10 +80,11 @@ function htmlOf(node, katexOptions) {
  * A heading that already has an id keeps it: an author who wrote one meant it,
  * and it may already be linked from elsewhere.
  *
- * @param {Object} [options]
+ * @param {object} [options] How much of the document to cover.
  * @param {number[]} [options.levels] Heading levels to process. Default: all six.
  * @param {Record<string, unknown>} [options.katexOptions] KaTeX options for `html`.
- * @returns {(tree: import('hast').Root, file: import('vfile').VFile) => void}
+ * @returns {(tree: import('hast').Root, file: import('vfile').VFile) => void} A unified
+ *   transformer that assigns ids and collects the entries onto `file.data.fm`.
  */
 export function rehypeHeadings(options = {}) {
 	const levels = options.levels ?? [1, 2, 3, 4, 5, 6];

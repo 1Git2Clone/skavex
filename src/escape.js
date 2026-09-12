@@ -51,10 +51,12 @@ export function rehypeEscapeSvelteBraces() {
 			if (parent === undefined || index === undefined) return;
 			if (!/[{}]/.test(node.value)) return;
 
-			parent.children[index] = /** @type {any} */ ({
-				type: 'raw',
-				value: escapeText(node.value)
-			});
+			// `raw` is declared by mdast-util-to-hast, which augments hast's node
+			// unions — so this is a named type rather than a shape asserted past
+			// the compiler.
+			/** @type {import('hast').RootContent} */
+			const raw = { type: 'raw', value: escapeText(node.value) };
+			parent.children[index] = raw;
 		});
 	};
 }

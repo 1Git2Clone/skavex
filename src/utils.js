@@ -14,15 +14,15 @@
  * pre-rendered HTML containing either — highlighted code especially — corrupts
  * the surrounding expression without this.
  *
- * @param {string} value
- * @returns {string}
+ * @param {string} value Text destined for inside a template literal.
+ * @returns {string} The same text, safe to interpolate.
  */
 export function escapeTemplateLiteral(value) {
 	return value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
 }
 
 /**
- * Build a `{@html ...}` expression carrying pre-rendered HTML.
+ * Build a Svelte html-expression carrying pre-rendered HTML.
  *
  * Use when a plugin has already produced trusted markup — syntax-highlighted
  * code, a rendered diagram — and wants a component to display it verbatim.
@@ -40,9 +40,11 @@ export function rawHtmlExpression(html) {
  * Strings become quoted attributes and everything else an expression, so
  * `{id: 'x', start: 30, loop: true}` yields `id="x" start={30} loop={true}`.
  *
- * @param {string} name
- * @param {unknown} value
- * @returns {string}
+ * @param {string} name Attribute name, written as the tag should carry it.
+ * @param {unknown} value Attribute value. Strings are quoted; anything else
+ *   becomes a Svelte expression.
+ * @returns {string} One `name="…"` or `name={…}` pair, or an empty string when
+ *   the value is `undefined`.
  */
 function attribute(name, value) {
 	if (typeof value === 'string') return `${name}=${JSON.stringify(value)}`;
@@ -93,10 +95,15 @@ export function componentNode(name, props = {}, children) {
  * plus surrounding prose, or a link whose text differs from its target, is
  * deliberately not a match — the author wrote a sentence, not an embed.
  *
- * @param {any} node An mdast node; only `paragraph` can match.
- * @returns {string|null}
+ * @param {import('mdast').Nodes | null | undefined} node Any mdast node; only a
+ *   `paragraph` can match.
+ * @returns {string|null} The URL, or `null` when the paragraph is anything else.
  */
 export function getBareLinkFromParagraph(node) {
+	// The Array.isArray guards are redundant for a caller the types reach — an
+	// mdast paragraph always has children. They are here because this is
+	// exported for plugin authors, and a plain-JavaScript one can pass anything
+	// at all. Returning null beats throwing inside somebody else's build.
 	if (!node || node.type !== 'paragraph') return null;
 	if (!Array.isArray(node.children) || node.children.length !== 1) return null;
 
@@ -106,7 +113,7 @@ export function getBareLinkFromParagraph(node) {
 
 	const text = child.children[0];
 	if (text.type !== 'text') return null;
-	if (text.value.trim() !== String(child.url).trim()) return null;
+	if (String(text.value).trim() !== String(child.url).trim()) return null;
 
 	return child.url;
 }

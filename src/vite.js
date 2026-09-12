@@ -29,8 +29,9 @@ import { compile } from './compile.js';
  * being a Svelte file, and the browser is served component source as if it were
  * a module.
  *
- * @param {import('./compile.js').SkavexOptions} [options]
- * @returns {import('vite').Plugin}
+ * @param {import('./compile.js').SkavexOptions} [options] Passed through to
+ *   `compile` for every document this plugin handles.
+ * @returns {import('vite').Plugin} A Vite plugin, to be listed before the Svelte one.
  */
 export function skavex(options = {}) {
 	const extensions = options.extensions ?? ['.md'];

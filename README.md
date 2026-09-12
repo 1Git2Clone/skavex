@@ -283,6 +283,16 @@ pnpm bench           # comparison against mdsvex
 pnpm demo            # the editor, locally
 ```
 
+`any` is banned. Not discouraged — banned, by `jsdoc/reject-any-type` and
+`jsdoc/check-types`, in source, tests, benchmarks and components alike, because
+the JSDoc here is not documentation that might drift from the types: it **is**
+the type declaration shipped to consumers, and one `any` disables every check
+the rest of the config exists to perform. Where a value genuinely is not known,
+`unknown` says so and forces the narrowing that `any` skips.
+
+`pnpm check` runs three passes: the declaration build over `src/`, a no-emit
+pass over everything else, and `svelte-check` over the demo.
+
 The suite asserts behaviour rather than snapshots: that braces survive as text,
 that an unbalanced brace really is a Svelte parse error (so the escaping is
 load-bearing), that KaTeX reaches the server-rendered HTML, and that generated
