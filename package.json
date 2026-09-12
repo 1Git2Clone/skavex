@@ -59,6 +59,7 @@
 		"build": "rm -rf types && tsc -p tsconfig.json",
 		"check": "tsc -p tsconfig.json",
 		"prepublishOnly": "pnpm run build && pnpm run lint && pnpm test",
+		"test:e2e": "playwright test",
 		"demo": "vite --config demo/vite.config.js demo",
 		"demo:build": "vite build --config demo/vite.config.js demo"
 	},
@@ -87,6 +88,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
+		"@playwright/test": "1.61.1",
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
 		"@types/hast": "^3.0.5",
 		"@types/mdast": "^4.0.4",
