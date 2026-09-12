@@ -20,11 +20,12 @@
       devShells = forAllSystems (pkgs: {
         # The whole toolchain, so CI and a contributor's machine cannot drift:
         # .forgejo/workflows/ci.yml runs every check through `nix develop -c`.
-        # Node 22 is the oldest LTS still in nixpkgs — 20 went EOL 2026-04-30
-        # and now throws on eval.
+        # Node 26, the newest release line. package.json's engines field stays
+        # wider than this on purpose: consumers pick their own version, this is
+        # only what skavex is developed and tested against.
         default = pkgs.mkShell {
           packages = [
-            pkgs.nodejs_22
+            pkgs.nodejs_26
             pkgs.pnpm
           ];
         };
