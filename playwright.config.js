@@ -18,6 +18,13 @@ export default defineConfig({
 
 	use: { baseURL: `http://localhost:${PORT}/` },
 
+	// The CI runner shares a box with mail, git and a minecraft server, and a
+	// render that takes 40 ms here can take a great deal longer there. These are
+	// headroom for a contended machine, not cover for a slow app: every
+	// assertion below still resolves in milliseconds when the box is idle.
+	timeout: 60_000,
+	expect: { timeout: 15_000 },
+
 	// Chromium only. These assert that the library's output reaches the DOM, not
 	// that browsers differ; a second engine would double the runtime of a job on
 	// a box that is also serving mail and git for one more copy of the same

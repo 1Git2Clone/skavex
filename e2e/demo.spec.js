@@ -53,14 +53,18 @@ test('escapes braces in prose while leaving a component tag intact', async ({ pa
 	// The contract the whole library is built around, asserted where it matters:
 	// in the generated Svelte, which is what the compiler will read.
 	await page.getByRole('button', { name: 'Svelte source' }).click();
-	const code = await page.locator('pre.code').innerText();
+	const code = page.locator('pre.code');
 
+	// Retrying assertions rather than one `innerText()` read compared with
+	// toContain: the read happens once, so on a loaded machine it can catch the
+	// pane before its first render and fail with no second look.
+	//
 	// Prose braces became entities, so Svelte reads them as text.
-	expect(code).toContain('&#123;braces&#125;');
+	await expect(code).toContainText('&#123;braces&#125;');
 	// The component's own braces did NOT, so `start={3}` is still a real prop.
-	expect(code).toContain('<Counter start={3} />');
-	expect(code).toContain('<script module>');
-	expect(code).toContain('export const metadata =');
+	await expect(code).toContainText('<Counter start={3} />');
+	await expect(code).toContainText('<script module>');
+	await expect(code).toContainText('export const metadata =');
 });
 
 test('labels a component tag the browser cannot render', async ({ page }) => {
