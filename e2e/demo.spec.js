@@ -22,6 +22,32 @@ function watchForFailures(page) {
 	return () => expect(problems).toEqual([]);
 }
 
+/**
+ * Run an assertion and, if it fails, say what the page actually held.
+ *
+ * A locator that timed out reports only which selector it could not find,
+ * which is the least useful half of the story when a failure reproduces on one
+ * machine and nowhere else.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {() => Promise<void>} assertion
+ * @returns {Promise<void>}
+ */
+async function reporting(page, assertion) {
+	try {
+		await assertion();
+	} catch (/** @type {any} */ error) {
+		const source = await page.getByLabel('Markdown').inputValue();
+		const rendered = await page.locator('.prose').innerHTML();
+		throw new Error(
+			`${error.message}\n` +
+				`--- editor held ---\n${JSON.stringify(source)}\n` +
+				`--- pane held ---\n${rendered.slice(0, 1500)}`,
+			{ cause: error }
+		);
+	}
+}
+
 test.beforeEach(async ({ page }) => {
 	await page.goto('/');
 	await expect(page.locator('.prose .katex')).not.toHaveCount(0);
@@ -83,9 +109,11 @@ test('re-renders as the document is edited', async ({ page }) => {
 
 	await editor.fill('## Edited\n\nNew maths: $e^{i\\pi} + 1 = 0$\n');
 
-	await expect(page.locator('.prose h2')).toHaveText('Edited');
-	await expect(page.locator('.prose .katex-mathml').first()).toBeAttached();
-	await expect(page.locator('.prose table')).toHaveCount(0);
+	await reporting(page, async () => {
+		await expect(page.locator('.prose h2')).toHaveText('Edited');
+		await expect(page.locator('.prose .katex-mathml').first()).toBeAttached();
+		await expect(page.locator('.prose table')).toHaveCount(0);
+	});
 
 	assertClean();
 });
