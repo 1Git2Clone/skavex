@@ -1,13 +1,12 @@
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 
-/**
- * A Svelte component discovered in the components directory.
- *
- * @typedef {object} DiscoveredComponent
- * @property {string} name       Tag name as markup must spell it, e.g. `YouTube`.
- * @property {string} specifier  Import specifier to emit, e.g. `/src/lib/md/YouTube.svelte`.
- */
+// Kept re-exported from here because it is half of this module's job from a
+// caller's point of view; it lives in browser.js because it is pure string
+// work and the live preview needs it without dragging node:fs along.
+export { selectUsedComponents, referencedComponents } from './browser.js';
+
+/** @typedef {import('./browser.js').DiscoveredComponent} DiscoveredComponent */
 
 /**
  * Filesystem paths a configured directory might mean, in preference order.
@@ -119,26 +118,4 @@ export async function findComponents(dir, root) {
 	}
 
 	return { components: [...byName.values()], duplicates };
-}
-
-/**
- * Select the components a document actually references.
- *
- * Only capitalised tags can be components in Svelte, and by the time this runs
- * any `<` that was literal document text has already been escaped to `&lt;` by
- * {@link import('./escape.js').rehypeEscapeSvelteBraces}. So a bare `<Name` in
- * the HTML is markup a plugin injected on purpose, never prose or a fenced code
- * sample that merely looks like one.
- *
- * @param {string} html Stringified document markup.
- * @param {DiscoveredComponent[]} available Components found on disk.
- * @returns {DiscoveredComponent[]} Those referenced by `html`, deduplicated.
- */
-export function selectUsedComponents(html, available) {
-	/** @type {Set<string>} */
-	const used = new Set();
-	for (const match of html.matchAll(/<([A-Z][A-Za-z0-9_]*)/g)) {
-		used.add(match[1]);
-	}
-	return available.filter((component) => used.has(component.name));
 }

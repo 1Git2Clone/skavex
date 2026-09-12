@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compile } from '../src/index.js';
-import { findComponents, selectUsedComponents } from '../src/components.js';
+import { findComponents, selectUsedComponents, referencedComponents } from '../src/components.js';
+import { render } from '../src/browser.js';
 import { componentNode, rawHtmlExpression } from '../src/utils.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -125,5 +126,58 @@ describe('utils', () => {
 		// the template literal and corrupt the component.
 		const expression = rawHtmlExpression('a ` b ${c}');
 		expect(expression).toBe('{@html `a \\` b \\${c}`}');
+	});
+});
+
+describe('referencedComponents', () => {
+	it('reports names the markup uses, deduplicated', () => {
+		const html = '<p>x</p><Counter /><Callout type="note"><Counter start={2} /></Callout>';
+		expect(referencedComponents(html)).toEqual(['Counter', 'Callout']);
+	});
+
+	it('reports names no component file defines, which selectUsedComponents cannot', () => {
+		// The difference between the two is a diagnosis: a tag with nothing behind
+		// it compiles to an undefined variable and throws at mount, so a caller
+		// needs to be able to see it coming.
+		const html = '<Missing />';
+
+		expect(referencedComponents(html)).toEqual(['Missing']);
+		expect(selectUsedComponents(html, [])).toEqual([]);
+	});
+
+	it('ignores lowercase tags, which Svelte treats as elements', () => {
+		expect(referencedComponents('<div /><span />')).toEqual([]);
+	});
+});
+
+describe('component tags through the markdown pipeline', () => {
+	it.each([
+		['at the top level', '<Counter />'],
+		['indented two spaces', '  <Counter />'],
+		['indented three spaces', '   <Counter />'],
+		['inside a list item', '- item\n\n  <Counter />'],
+		['inside a nested list', '- a\n  - b\n\n    <Counter />'],
+		['inside a blockquote', '> quoted\n>\n> <Counter />']
+	])('survives %s', async (_, markdown) => {
+		const { html } = await render(markdown);
+		expect(referencedComponents(html)).toEqual(['Counter']);
+	});
+
+	it('becomes a code block at four spaces, as CommonMark requires', async () => {
+		// Not a gap to close. Four spaces is an indented code block, and a document
+		// showing a component tag as an example depends on that staying true.
+		const { html } = await render('    <Counter />');
+
+		expect(html).toContain('<code>');
+		expect(referencedComponents(html)).toEqual([]);
+	});
+
+	it('renders maths inside a component’s children', async () => {
+		// Children stay markdown rather than becoming an opaque string, which is
+		// what lets a component wrap prose instead of just receiving it.
+		const { html } = await render('<Callout>\n\n**bold** and $x^2$\n\n</Callout>');
+
+		expect(html).toContain('<strong>bold</strong>');
+		expect(html).toContain('katex');
 	});
 });

@@ -114,14 +114,74 @@ test('escapes braces in prose while leaving a component tag intact', async ({ pa
 	await expect(code).toContainText('export const metadata =');
 });
 
-test('labels a component tag the browser cannot render', async ({ page }) => {
-	// The preview pane is raw HTML, so <Counter /> is an element the browser has
-	// never heard of and draws as nothing. An unexplained blank gap in the middle
-	// of the demo's main point is worse than no example at all.
-	const placeholder = page.locator('.prose .unrendered');
+test('runs the document as a real Svelte component', async ({ page }) => {
+	const assertClean = watchForFailures(page);
 
-	await expect(placeholder).toHaveCount(1);
-	await expect(placeholder).toHaveAttribute('data-tag', 'counter');
+	// The claim the library exists to make. A dead <counter> tag in a pane of
+	// raw HTML would satisfy every other assertion in this file while proving
+	// nothing, so this one insists the component is mounted and alive.
+	const counter = page.locator('.prose button');
+	await expect(counter).toHaveText(/counted to 3/);
+
+	await counter.click();
+	await expect(counter).toHaveText(/counted to 4/);
+
+	// Its <style> too: Svelte compiles that to a separate stylesheet, so a demo
+	// that forgot to install it would render an unstyled button and look fine
+	// to every assertion above.
+	await expect(counter).toHaveCSS('border-style', 'solid');
+
+	assertClean();
+});
+
+test('keeps markdown, maths and components composable', async ({ page }) => {
+	// Children of a component are still markdown — the case that separates this
+	// from passing a string prop — and maths inside them still renders.
+	const callout = page.locator('.prose aside[data-type="note"]');
+
+	await expect(callout).toHaveCount(1);
+	await expect(callout.locator('.katex')).not.toHaveCount(0);
+});
+
+test('runs remark plugins written in the editor', async ({ page }) => {
+	// <mark> is not markdown. It exists only because the plugin in the file tree
+	// ran, which is the whole of skavex's plugin story asserted end to end.
+	await expect(page.locator('.prose mark')).toHaveText('highlighted text');
+});
+
+test('adds a component, compiles it into the document, and removes it', async ({ page }) => {
+	const assertClean = watchForFailures(page);
+	await page.getByRole('button', { name: 'Expand file tree' }).click();
+
+	await page.getByTitle('Add a component').click();
+	await expect(page.getByLabel('Component source')).toBeVisible();
+
+	// A new component is inert until the document names it — the same rule the
+	// build-time pipeline applies, so the demo should not pretend otherwise.
+	await page.locator('.tree .file', { hasText: 'document.md' }).click();
+	await setSource(page, 'Hello\n\n<NewComponent label="it works" />\n');
+	await reporting(page, async () => {
+		await expect(page.locator('.prose p', { hasText: 'it works' })).toHaveCount(1);
+	});
+
+	// Removing it leaves the document referencing a file that is gone. That must
+	// be a sentence naming the tag, not a blank pane and a console error.
+	await page.getByRole('button', { name: 'Remove NewComponent.svelte' }).click();
+	await expect(page.locator('.error')).toContainText('<NewComponent />');
+
+	assertClean();
+});
+
+test('collapses the file tree to the focused file', async ({ page }) => {
+	// Collapsing reclaims width; it should not cost you your place.
+	await expect(page.locator('.spine')).toHaveText('document.md');
+
+	await page.getByRole('button', { name: 'Expand file tree' }).click();
+	await expect(page.locator('.tree')).toBeVisible();
+	await expect(page.locator('.spine')).toHaveCount(0);
+
+	await page.getByRole('button', { name: 'Collapse file tree' }).click();
+	await expect(page.locator('.spine')).toHaveText('document.md');
 });
 
 test('re-renders as the document is edited', async ({ page }) => {
@@ -145,9 +205,16 @@ test('collects frontmatter and a table of contents that renders its maths', asyn
 	// Navigation shows the formula rather than its LaTeX source — the same KaTeX
 	// options as the body, so the maths is not silent in the one place a reader
 	// uses to move around the document.
+	// One per heading in the sample: Why…, Comparison, Components, Plugins.
 	const entries = page.locator('.toc li');
-	await expect(entries).toHaveCount(2);
+	await expect(entries).toHaveCount(4);
 	await expect(entries.first().locator('.katex')).toBeAttached();
+});
+
+test('shows the package version it was built from', async ({ page }) => {
+	// A footer that states a version nobody bumps is worse than no version.
+	// vite.config.js reads it from package.json for exactly that reason.
+	await expect(page.locator('footer')).toContainText(/v\d+\.\d+\.\d+/);
 });
 
 test('reports a malformed document instead of going blank', async ({ page }) => {

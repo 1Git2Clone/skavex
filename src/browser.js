@@ -27,6 +27,14 @@ import { rehypeHeadings } from './headings.js';
 import { rehypeEscapeSvelteBraces } from './escape.js';
 
 /**
+ * A Svelte component discovered in the components directory.
+ *
+ * @typedef {object} DiscoveredComponent
+ * @property {string} name       Tag name as markup must spell it, e.g. `YouTube`.
+ * @property {string} specifier  Import specifier to emit, e.g. `/src/lib/md/YouTube.svelte`.
+ */
+
+/**
  * @typedef {object} SkavexOptions
  * @property {string[]} [extensions]    File extensions treated as documents. Default `['.md']`.
  * @property {string} [layout]          Import specifier for a Svelte component wrapping every
@@ -199,7 +207,7 @@ function serialiseMetadata(metadata) {
  * @param {string} input.html The document body, already HTML.
  * @param {DocumentMetadata} input.metadata Exported from the generated module.
  * @param {string} [input.layout] Import specifier for a wrapping component.
- * @param {import('./components.js').DiscoveredComponent[]} input.components Components
+ * @param {DiscoveredComponent[]} input.components Components
  *   the markup refers to, which the module must import.
  * @returns {string} Svelte source, ready for the Svelte compiler.
  */
@@ -236,4 +244,42 @@ export function buildModule({ html, metadata, layout, components }) {
 	}
 
 	return lines.join('\n') + '\n';
+}
+
+/**
+ * Every component name a document's markup references.
+ *
+ * Only capitalised tags can be components in Svelte, and by the time this runs
+ * any `<` that was literal document text has already been escaped to `&lt;` by
+ * {@link import('./escape.js').rehypeEscapeSvelteBraces}. So a bare `<Name` in
+ * the HTML is markup a plugin injected on purpose, never prose or a fenced code
+ * sample that merely looks like one.
+ *
+ * @param {string} html Stringified document markup.
+ * @returns {string[]} The names referenced, deduplicated, in first-seen order.
+ */
+export function referencedComponents(html) {
+	/** @type {Set<string>} */
+	const used = new Set();
+	for (const match of html.matchAll(/<([A-Z][A-Za-z0-9_]*)/g)) used.add(match[1]);
+	return [...used];
+}
+
+/**
+ * Select the components a document actually references.
+ *
+ * The list of candidates can come from anywhere — a directory scan, or an
+ * in-memory workspace like the live editor's.
+ *
+ * A referenced name with no matching candidate is simply not returned: this
+ * function reports what can be imported, not what is missing. Callers that
+ * care about the difference compare against {@link referencedComponents}.
+ *
+ * @param {string} html Stringified document markup.
+ * @param {DiscoveredComponent[]} available Components available to the document.
+ * @returns {DiscoveredComponent[]} Those referenced by `html`, deduplicated.
+ */
+export function selectUsedComponents(html, available) {
+	const used = new Set(referencedComponents(html));
+	return available.filter((component) => used.has(component.name));
 }

@@ -131,6 +131,13 @@ export default [
 	// that one is build-time and reads process.env.
 	{
 		files: ['demo/src/**'],
-		languageOptions: { globals: globals.browser }
+		languageOptions: {
+			globals: {
+				...globals.browser,
+				// Substituted at build time by vite.config.js, which reads it from
+				// package.json so the footer cannot state a stale version.
+				__APP_VERSION__: 'readonly'
+			}
+		}
 	}
 ];
