@@ -113,5 +113,14 @@ What it does assert:
 - **That server-rendered maths does not move the page** — CLS at or under
   0.100.
 
+Lighthouse's trace engine gives up on a heavily loaded machine and returns NaN
+for the timing-derived audits, so the table prints `n/a` for those rather than
+a number that is not a measurement. Layout shift survives — it comes from
+layout events rather than from the trace those audits need — which is
+convenient, because it is the metric the claim rests on. On the CI runner the
+client-rendered page measured **CLS 0.440**, considerably worse than the 0.156
+on a quiet workstation: a slow machine is exactly where rendering maths in the
+browser hurts most.
+
 A count may grow when the corpus or KaTeX's markup changes. It may never
 shrink, because shrinking is what a silent failure looks like.

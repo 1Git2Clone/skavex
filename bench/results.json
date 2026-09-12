@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-09-12T15:13:08.868Z",
+	"generatedAt": "2026-09-12T15:31:59.563Z",
 	"node": "v26.8.1",
 	"documents": 20,
 	"samples": 7,
@@ -8,8 +8,8 @@
 			"id": "skavex",
 			"label": "skavex",
 			"note": "unified 11, KaTeX at build time",
-			"msPerDoc": 10.365520549999996,
-			"docsPerSecond": 96.47368843429676,
+			"msPerDoc": 9.168575799999996,
+			"docsPerSecond": 109.06819355738985,
 			"bytes": 22610,
 			"features": {
 				"katex": 46,
@@ -24,8 +24,8 @@
 			"id": "mdsvex-legacy",
 			"label": "mdsvex + remark-math 3",
 			"note": "the newest maths plugins mdsvex can actually run",
-			"msPerDoc": 10.235005300000012,
-			"docsPerSecond": 97.70390641614996,
+			"msPerDoc": 9.414201699999989,
+			"docsPerSecond": 106.22249574278838,
 			"bytes": 26001,
 			"features": {
 				"katex": 46,
@@ -40,8 +40,8 @@
 			"id": "mdsvex-modern",
 			"label": "mdsvex + remark-math 6",
 			"note": "what a new project gets by installing current versions",
-			"msPerDoc": 3.4505345999999917,
-			"docsPerSecond": 289.810164488715,
+			"msPerDoc": 3.0862079499999937,
+			"docsPerSecond": 324.02223576671236,
 			"bytes": 4479,
 			"features": {
 				"katex": 0,
