@@ -302,6 +302,7 @@ textarea:focus {
 .tree .group {
 	display: flex;
 	align-items: center;
+	min-height: 1.75rem;
 	padding: 0.5rem 0.75rem 0.15rem;
 }
 
@@ -309,7 +310,15 @@ textarea:focus {
 	color: var(--dim);
 }
 
+/* Sized, not left to the text. A control whose hit area is exactly its glyph is
+   a poor target at the best of times, and it is no target at all in a browser
+   with no fonts, where a text-derived box collapses to zero height. */
 .tree .add {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.5rem;
+	min-height: 1.5rem;
 	margin-left: auto;
 	background: none;
 	border: 0;
@@ -331,8 +340,12 @@ textarea:focus {
 }
 
 .tree .file {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
 	flex: 1;
 	min-width: 0;
+	min-height: 1.5rem;
 	text-align: left;
 	background: none;
 	border: 0;
@@ -363,6 +376,11 @@ textarea:focus {
 }
 
 .tree .drop {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.75rem;
+	min-height: 1.5rem;
 	background: none;
 	border: 0;
 	color: var(--line);

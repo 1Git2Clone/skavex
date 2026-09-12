@@ -32,6 +32,12 @@
             # not run on NixOS — and which CI would re-download every run,
             # since the runner keeps no cache.
             pkgs.playwright-driver.browsers
+            # Fonts. The job container ships none, and a Chromium with no fonts
+            # at all does not fall back to something narrower — it lays text out
+            # with zero metrics, so every box sized by its text collapses to
+            # height 0. The page still "renders"; it is simply not a page. Any
+            # browser assertion about layout measures a fiction without this.
+            pkgs.dejavu_fonts
           ];
 
           # The two variables that make @playwright/test use the browsers above
@@ -41,6 +47,10 @@
           env = {
             PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
             PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+            # Chromium finds fonts through fontconfig, which looks in the host's
+            # directories — none of which exist in the runner's container. This
+            # points it at the font above instead.
+            FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
           };
         };
       });
