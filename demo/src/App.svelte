@@ -11,6 +11,12 @@
 	let preview = $state();
 	let elapsed = $state(0);
 
+	// Renders are async and the debounce does not stop two from overlapping, so
+	// a slow one started earlier can resolve after a fast one started later and
+	// overwrite it with output for a document that is no longer in the editor.
+	// Only the newest request may write.
+	let latest = 0;
+
 	$effect(() => {
 		const current = source;
 		// Typing is faster than a full parse of a large document; without this the
@@ -22,14 +28,17 @@
 	/** @param {string} value */
 	async function update(value) {
 		const started = performance.now();
+		const request = ++latest;
 		try {
 			const { html, metadata } = await render(value);
 			// The whole point of the library, shown rather than described: the same
 			// document is also a real Svelte component. buildModule is what the Vite
 			// plugin hands to the Svelte compiler at build time.
 			const code = buildModule({ html, metadata, components: [] });
+			if (request !== latest) return;
 			output = { html, code, metadata, error: '' };
 		} catch (/** @type {any} */ error) {
+			if (request !== latest) return;
 			output = { ...output, error: String(error?.message ?? error) };
 		}
 		elapsed = performance.now() - started;
