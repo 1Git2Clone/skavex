@@ -50,22 +50,74 @@ a {
 	color: var(--accent);
 }
 
+/* A flex column rather than height: calc(100dvh - <guess>). The header wraps on
+   a narrow screen and the footer is a second variable-height band, so any fixed
+   subtraction is wrong at exactly the widths that matter. */
+/* The column lives on #app, not on body: everything the app renders is mounted
+   inside that div, so a flex column on body would only ever have one child and
+   the footer would sit below the fold. */
+body {
+	height: 100dvh;
+	overflow: hidden;
+}
+
+#app {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
 main {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: auto 1fr 1fr;
+	/* minmax(0, 1fr), not 1fr. An implicit `auto` row is sized by its tallest
+	   item, and the panes contain a textarea holding a whole document — so the
+	   row grew to the content's height (1086px in a 720px viewport), spilled out
+	   of main, and was clipped by body's overflow. Everything below the fold
+	   then existed, had a real bounding box, and could not be clicked. */
+	grid-template-rows: minmax(0, 1fr);
 	gap: 1px;
 	background: var(--line);
-	height: calc(100dvh - 4rem);
+	flex: 1;
+	min-height: 0;
 }
 
 @media (max-width: 900px) {
+	/* Stacked, the panes are taller than the viewport by design, so the page
+	   scrolls again. */
+	body {
+		height: auto;
+		overflow: visible;
+	}
+
+	#app {
+		height: auto;
+	}
+
 	main {
 		grid-template-columns: 1fr;
-		height: auto;
+	}
+
+	main {
+		/* Stacked, each pane gets its own height and the page scrolls. */
+		grid-template-rows: none;
 	}
 
 	.pane {
 		height: 70dvh;
+	}
+
+	/* Stacked, the tree is a full-width band, so the collapsed rail reads
+	   across rather than down. */
+	.files,
+	.files.open {
+		width: auto;
+	}
+
+	.spine {
+		writing-mode: horizontal-tb;
+		margin: 0;
+		padding: 0 0.75rem 0.6rem;
 	}
 }
 
@@ -73,6 +125,9 @@ main {
 	display: flex;
 	flex-direction: column;
 	min-width: 0;
+	/* A grid item defaults to min-height: auto, which refuses to shrink below
+	   its content — the same reason the row overflowed above. */
+	min-height: 0;
 	background: var(--bg);
 }
 
@@ -174,19 +229,215 @@ textarea:focus {
 	padding-left: calc(var(--depth) * 1.25rem);
 }
 
-/* A tag the browser does not know, because it is a Svelte component. */
-.prose .unrendered {
+/* --- file tree ------------------------------------------------------- */
+
+.files {
+	background: var(--bg);
+	border-right: 1px solid var(--line);
+	display: flex;
+	flex-direction: column;
+	width: 3rem;
+	min-width: 0;
+	overflow: hidden;
+	transition: width 0.15s ease;
+}
+
+.files.open {
+	width: 14rem;
+}
+
+.files .bar {
+	gap: 0.5rem;
+}
+
+.root {
+	color: var(--text);
+}
+
+.hamburger {
+	display: grid;
+	gap: 3px;
+	padding: 0.35rem 0.25rem;
+	background: none;
+	border: 0;
+	cursor: pointer;
+	flex: none;
+}
+
+.hamburger span {
 	display: block;
-	border: 1px dashed var(--line);
-	border-radius: 4px;
-	padding: 0.6rem 0.75rem;
+	width: 16px;
+	height: 2px;
+	background: var(--dim);
+	border-radius: 1px;
+}
+
+.hamburger:hover span {
+	background: var(--text);
+}
+
+/* Collapsed, the rail still says which file is open — the point of collapsing
+   is to reclaim width, not to lose your place. */
+.spine {
+	writing-mode: vertical-rl;
+	padding: 0.75rem 0;
+	margin: 0 auto;
 	color: var(--dim);
 	font:
-		12px/1.6 ui-monospace,
+		12px/1 ui-monospace,
+		monospace;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tree {
+	padding: 0.5rem 0;
+	overflow: auto;
+	font:
+		13px/1.5 ui-monospace,
 		monospace;
 }
 
-.prose .unrendered::before {
-	content: '<' attr(data-tag)
-		'> — a Svelte component. The compiler turns this into a real one at build time; see the Svelte source tab.';
+.tree .group {
+	display: flex;
+	align-items: center;
+	min-height: 1.75rem;
+	padding: 0.5rem 0.75rem 0.15rem;
+}
+
+.tree .dir {
+	color: var(--dim);
+}
+
+/* Sized, not left to the text. A control whose hit area is exactly its glyph is
+   a poor target at the best of times, and it is no target at all in a browser
+   with no fonts, where a text-derived box collapses to zero height. */
+.tree .add {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.5rem;
+	min-height: 1.5rem;
+	margin-left: auto;
+	background: none;
+	border: 0;
+	color: var(--dim);
+	cursor: pointer;
+	font: inherit;
+	font-size: 15px;
+	line-height: 1;
+	padding: 0 0.25rem;
+}
+
+.tree .add:hover {
+	color: var(--accent);
+}
+
+.tree .row {
+	display: flex;
+	align-items: center;
+}
+
+.tree .file {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	flex: 1;
+	min-width: 0;
+	min-height: 1.5rem;
+	text-align: left;
+	background: none;
+	border: 0;
+	color: var(--dim);
+	cursor: pointer;
+	font: inherit;
+	padding: 0.25rem 0.75rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tree .file em {
+	color: var(--line);
+	font-style: normal;
+	font-size: 11px;
+}
+
+.tree .row.active,
+.tree .file.active {
+	background: var(--panel);
+}
+
+.tree .row.active .file,
+.tree .file.active,
+.tree .file:hover {
+	color: var(--text);
+}
+
+.tree .drop {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.75rem;
+	min-height: 1.5rem;
+	background: none;
+	border: 0;
+	color: var(--line);
+	cursor: pointer;
+	font: inherit;
+	padding: 0 0.6rem;
+}
+
+.tree .drop:hover {
+	color: #f7768e;
+}
+
+/* --- editor bar ------------------------------------------------------ */
+
+.name {
+	background: var(--bg);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	color: var(--text);
+	font:
+		12px/1.4 ui-monospace,
+		monospace;
+	padding: 0.2rem 0.4rem;
+	width: 11rem;
+}
+
+.hint {
+	color: var(--dim);
+	font-size: 0.75rem;
+	margin-left: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* --- footer ---------------------------------------------------------- */
+
+footer {
+	border-top: 1px solid var(--line);
+	color: var(--dim);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	align-items: center;
+	padding: 0.75rem 1.25rem;
+	font-size: 0.8rem;
+}
+
+footer nav {
+	display: flex;
+	gap: 1rem;
+	margin-left: auto;
+}
+
+mark {
+	background: #7aa2f733;
+	color: inherit;
+	border-radius: 3px;
+	padding: 0 0.15rem;
 }
