@@ -15,11 +15,18 @@
 # the tag is the identity, and a tag that has been published is done.
 #
 # ── The token ─────────────────────────────────────────────────────────────────
-# PACKAGES_TOKEN, and the name is not a preference. Forgejo reserves the
-# GITHUB_, FORGEJO_, GITEA_ and GITLAB_ prefixes for secret names — a secret
-# cannot be created under any of them — so the automatic repository token
-# a GitHub workflow would reach for is not addressable here at all.
-# Same reason hutao/vps names its Renovate secret RENOVATE_TOKEN.
+# Three things get confused here, so: the credential is a FORGEJO access token.
+# Nothing about the package registry is GitHub's — `GITHUB_TOKEN` is a
+# compatibility alias Forgejo injects under GitHub's names so that workflows
+# written for GitHub port across, and reserving the GITHUB_, FORGEJO_, GITEA_
+# and GITLAB_ prefixes for secret names is how it keeps them to itself. That is
+# why a secret cannot be CREATED under any of them, and why hutao/vps names its
+# Renovate secret RENOVATE_TOKEN.
+#
+# The injected token is scoped to this REPOSITORY. Publishing a package is an
+# OWNER-level scope, so the repository token is the wrong shape for the job
+# even where it is readable — which is the reason for an explicit one here,
+# rather than the prefix rule on its own.
 #
 # Create it once, by hand, exactly like the Renovate one:
 #
