@@ -74,6 +74,12 @@ jobs:
       # the only thing that checks either. It also emits the .d.ts that ship to
       # consumers, which is why a JSDoc mistake has to fail here rather than in
       # somebody else's `svelte-check`.
+      #
+      # Three passes, because one of them used to be the whole story and covered
+      # a third of the repository: the declaration build over src/, a no-emit
+      # pass over tests, benchmarks, e2e and scripts, and svelte-check over the
+      # demo. The middle one found six implicitly-`any` parameters the day it
+      # was added.
       - name: Types
         run: nix develop -c pnpm check
 

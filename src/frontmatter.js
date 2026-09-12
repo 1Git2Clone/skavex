@@ -13,7 +13,8 @@ import { parse as parseYaml } from 'yaml';
  * The `yaml` node is left in the tree. `remark-rehype` has no handler for it,
  * so it is dropped on the way to HTML and never reaches the page.
  *
- * @returns {(tree: import('mdast').Root, file: import('vfile').VFile) => void}
+ * @returns {(tree: import('mdast').Root, file: import('vfile').VFile) => void} A
+ *   unified transformer that writes the parsed frontmatter onto `file.data.fm`.
  */
 export function remarkExtractFrontmatter() {
 	return (tree, file) => {

@@ -59,21 +59,53 @@ const GUARANTEES = {
 };
 
 /**
- * @returns {Promise<any>}
+ * One engine's row in the report.
+ *
+ * @typedef {object} EngineResult
+ * @property {string} id                                 Stable key, as in engines.js.
+ * @property {string} label                              How the table names it.
+ * @property {string} note                               What a reader needs to read its numbers.
+ * @property {number} msPerDoc                           Median milliseconds per document.
+ * @property {number} docsPerSecond                      The same figure, inverted.
+ * @property {number} bytes                              Size of the output produced.
+ * @property {import('./measure.js').Features} features  What that output contains.
+ */
+
+/**
+ * The whole run, as written to results.json.
+ *
+ * @typedef {object} Report
+ * @property {string} generatedAt        ISO timestamp.
+ * @property {string} node               The node version that produced it.
+ * @property {number} documents          Documents per sample.
+ * @property {number} samples            Samples taken.
+ * @property {EngineResult[]} results    One per engine, in the order engines.js lists them.
+ */
+
+/**
+ * Run every engine and collect what it did.
+ *
+ * @returns {Promise<Report>} The measurements.
  */
 async function measure() {
 	const documents = corpus(DOCUMENTS);
 	const timings = await timeAll(ENGINES, documents, SAMPLES);
 
-	/** @type {any[]} */
+	/** @type {EngineResult[]} */
 	const results = [];
 
 	for (const engine of ENGINES) {
+		const timing = timings.get(engine.id);
+		// Cannot happen while timeAll is given these engines, which is exactly why
+		// it should say so loudly rather than spread `undefined` into the row and
+		// surface as NaN three functions later.
+		if (!timing) throw new Error(`no timing recorded for engine "${engine.id}"`);
+
 		results.push({
 			id: engine.id,
 			label: engine.label,
 			note: engine.note,
-			.../** @type {any} */ (timings.get(engine.id)),
+			...timing,
 			features: features(await engine.compile(documents[0]))
 		});
 	}
@@ -88,16 +120,18 @@ async function measure() {
 }
 
 /**
- * @param {any} report
- * @returns {string}
+ * Render the report as a markdown table.
+ *
+ * @param {Report} report The measurements.
+ * @returns {string} A markdown table, ready to paste into BENCHMARKS.md.
  */
 function table(report) {
-	const rows = report.results.map((/** @type {any} */ r) => {
-		const f = r.features;
+	const rows = report.results.map((result) => {
+		const f = result.features;
 		return [
-			r.label,
-			`${r.msPerDoc.toFixed(2)} ms`,
-			`${Math.round(r.docsPerSecond)}/s`,
+			result.label,
+			`${result.msPerDoc.toFixed(2)} ms`,
+			`${Math.round(result.docsPerSecond)}/s`,
 			f.katex ? `yes (${f.katex})` : '**no**',
 			f.mathml ? `yes (${f.mathml})` : '**no**',
 			f.headingIds ? `yes (${f.headingIds})` : 'no',
@@ -129,25 +163,36 @@ function table(report) {
 }
 
 /**
- * @param {any} report
+ * Compare a report against the guarantees.
+ *
+ * @param {Report} report The measurements.
  * @returns {string[]} One message per broken guarantee.
  */
 function check(report) {
 	/** @type {string[]} */
 	const failures = [];
 
-	/** @param {string} id */
-	const find = (id) => report.results.find((/** @type {any} */ r) => r.id === id);
+	/**
+	 * Find an engine's row, or say which one is missing.
+	 *
+	 * @param {string} id
+	 * @returns {EngineResult}
+	 */
+	const find = (id) => {
+		const result = report.results.find((candidate) => candidate.id === id);
+		if (!result) throw new Error(`the benchmark did not measure "${id}"`);
+		return result;
+	};
 
 	const skavex = find('skavex');
 	const working = find('mdsvex-legacy');
 	const bare = find('bare');
 
 	for (const [key, expected] of Object.entries(GUARANTEES.skavex)) {
-		const actual = skavex.features[key];
+		const actual = skavex.features[/** @type {keyof import('./measure.js').Features} */ (key)];
 		// Counts may grow when the corpus or KaTeX's markup changes; they must
 		// never shrink, which is what a silent failure looks like.
-		const ok = typeof expected === 'number' ? actual >= expected : actual === expected;
+		const ok = typeof expected === 'number' ? Number(actual) >= expected : actual === expected;
 		if (!ok) failures.push(`skavex.${key}: expected ${expected}, measured ${actual}`);
 	}
 
@@ -181,12 +226,14 @@ console.log(
 	`\nnode ${report.node}, ${report.documents} documents, median of ${report.samples} samples`
 );
 
-const skavexResult = report.results.find((/** @type {any} */ r) => r.id === 'skavex');
-const bareResult = report.results.find((/** @type {any} */ r) => r.id === 'bare');
-console.log(
-	`skavex costs ${(skavexResult.msPerDoc / bareResult.msPerDoc).toFixed(2)}x the bare pipeline, ` +
-		`for heading data, a rendered table of contents and output that compiles.`
-);
+const skavexResult = report.results.find((result) => result.id === 'skavex');
+const bareResult = report.results.find((result) => result.id === 'bare');
+if (skavexResult && bareResult) {
+	console.log(
+		`skavex costs ${(skavexResult.msPerDoc / bareResult.msPerDoc).toFixed(2)}x the bare ` +
+			`pipeline, for heading data, a rendered table of contents and output that compiles.`
+	);
+}
 
 if (process.argv.includes('--check')) {
 	const failures = check(report);

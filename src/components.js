@@ -4,7 +4,7 @@ import path from 'node:path';
 /**
  * A Svelte component discovered in the components directory.
  *
- * @typedef {Object} DiscoveredComponent
+ * @typedef {object} DiscoveredComponent
  * @property {string} name       Tag name as markup must spell it, e.g. `YouTube`.
  * @property {string} specifier  Import specifier to emit, e.g. `/src/lib/md/YouTube.svelte`.
  */
@@ -28,6 +28,25 @@ export function resolveComponentsDir(dir, root) {
 }
 
 /**
+ * Is this the error `readdir` throws for a directory that is not there?
+ *
+ * A type guard rather than a cast: a caught value really is `unknown`, and the
+ * only shape worth recognising is the one this function is allowed to ignore.
+ * Anything else has to keep propagating.
+ *
+ * @param {unknown} error Whatever was caught.
+ * @returns {boolean} True when it is ENOENT and may be ignored.
+ */
+function isMissingDirectory(error) {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		/** @type {{code: unknown}} */ (error).code === 'ENOENT'
+	);
+}
+
+/**
  * Find every Svelte component under a directory, recursively.
  *
  * The component's NAME is its basename, so `md/embeds/YouTube.svelte` is
@@ -41,7 +60,8 @@ export function resolveComponentsDir(dir, root) {
  *
  * @param {string} dir  Directory as configured (used to build import specifiers).
  * @param {string} root Project root to resolve `dir` against.
- * @returns {Promise<{components: DiscoveredComponent[], duplicates: string[]}>}
+ * @returns {Promise<{components: DiscoveredComponent[], duplicates: string[]}>} Every
+ *   component found, and the basenames that appeared more than once.
  */
 export async function findComponents(dir, root) {
 	/** @type {import('node:fs').Dirent[] | undefined} */
@@ -54,8 +74,10 @@ export async function findComponents(dir, root) {
 			entries = await readdir(candidate, { withFileTypes: true, recursive: true });
 			absolute = candidate;
 			break;
-		} catch (/** @type {any} */ error) {
-			if (error && error.code === 'ENOENT') continue;
+		} catch (error) {
+			// `error` is unknown, as it should be — anything can be thrown. Narrow
+			// to the one case worth swallowing rather than asserting a shape.
+			if (isMissingDirectory(error)) continue;
 			throw error;
 		}
 	}

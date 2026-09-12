@@ -27,7 +27,7 @@ import { rehypeHeadings } from './headings.js';
 import { rehypeEscapeSvelteBraces } from './escape.js';
 
 /**
- * @typedef {Object} SkavexOptions
+ * @typedef {object} SkavexOptions
  * @property {string[]} [extensions]    File extensions treated as documents. Default `['.md']`.
  * @property {string} [layout]          Import specifier for a Svelte component wrapping every
  *                                      document. Receives the metadata as props; the document
@@ -59,6 +59,21 @@ import { rehypeEscapeSvelteBraces } from './escape.js';
  */
 
 /**
+ * A document's metadata: its frontmatter, plus whatever plugins contributed.
+ *
+ * The index signature is what lets a plugin add its own key — a reading time,
+ * a series name — without this type knowing about it. `headings` is spelled
+ * out because skavex populates it itself, and leaving it to the index
+ * signature would type it `unknown` and force a cast at every single call
+ * site, including inside this library's own tests. A type that makes its
+ * users cast is not doing its job.
+ *
+ * @typedef {Record<string, unknown> & {
+ *   headings?: import('./headings.js').HeadingEntry[]
+ * }} DocumentMetadata
+ */
+
+/**
  * Default KaTeX options.
  *
  * `htmlAndMathml` is deliberate: HTML alone renders visually but exposes
@@ -76,11 +91,15 @@ const DEFAULT_KATEX_OPTIONS = { output: 'htmlAndMathml', strict: false };
  * Exposed so a consumer can render markdown to HTML without the Svelte module
  * around it — useful for tests, feeds and search indexes.
  *
- * @param {SkavexOptions} [options]
- * @returns {import('unified').Processor<any, any, any, any, string>} A processor
- *   whose `process` yields a string. The generics are loose on purpose: the
- *   chain is assembled conditionally, so its precise instantiation depends on
- *   which options were passed.
+ * Written as one chain, with every optional stage becoming an empty
+ * `PluggableList` when it is off. unified treats that as a no-op, and keeping
+ * the chain unbroken is what lets the compiler follow the tree types all the
+ * way from mdast through hast to the string rehype-stringify produces. Split
+ * into conditional statements it cannot, and the return type collapses.
+ *
+ * @param {SkavexOptions} [options] Which stages to include and how to configure them.
+ * @returns {import('unified').Processor<import('mdast').Root, import('mdast').Root, import('hast').Root, import('hast').Root, string>}
+ *   A processor whose `process` yields the rendered HTML.
  */
 export function createProcessor(options = {}) {
 	const {
@@ -94,47 +113,40 @@ export function createProcessor(options = {}) {
 	const katexOptions =
 		typeof math === 'object' ? { ...DEFAULT_KATEX_OPTIONS, ...math } : DEFAULT_KATEX_OPTIONS;
 
-	const processor = unified()
-		.use(remarkParse)
-		.use(remarkFrontmatter, ['yaml'])
-		.use(remarkExtractFrontmatter);
-
-	if (gfm) processor.use(remarkGfm);
-	if (math) processor.use(remarkMath);
-
-	processor.use(remarkPlugins);
-
-	// allowDangerousHtml keeps raw HTML — and any markup a plugin injected — as
-	// `raw` nodes instead of discarding it. Without it, every component a plugin
-	// emits would vanish between markdown and HTML.
-	processor.use(remarkRehype, { allowDangerousHtml: true });
-
-	// Before the caller's own rehype plugins so they can see the assigned ids,
-	// and before KaTeX so the ids derive from prose. See rehypeHeadings.
-	if (headings) {
-		processor.use(rehypeHeadings, {
-			levels: typeof headings === 'object' ? headings.levels : undefined,
-			katexOptions
-		});
-	}
-
-	processor.use(rehypePlugins);
-
-	if (math) processor.use(rehypeKatex, katexOptions);
-
-	// After KaTeX: its MathML carries the original LaTeX in an <annotation>,
-	// braces included, and that has to be escaped like any other text.
-	processor.use(rehypeEscapeSvelteBraces);
-
-	processor.use(rehypeStringify, { allowDangerousHtml: true });
-
-	// The compiler tracks a processor's result type through a chain of `.use()`
-	// expressions, not through separate statements — and the statements above are
-	// conditional, so they cannot be a chain. It therefore still believes this
-	// processor compiles to `undefined` when rehype-stringify has in fact made it
-	// a string. The cast states what the assembled pipeline actually produces.
-	return /** @type {import('unified').Processor<any, any, any, any, string>} */ (
-		/** @type {unknown} */ (processor)
+	return (
+		unified()
+			.use(remarkParse)
+			.use(remarkFrontmatter, ['yaml'])
+			.use(remarkExtractFrontmatter)
+			.use(gfm ? [remarkGfm] : [])
+			.use(math ? [remarkMath] : [])
+			.use(remarkPlugins)
+			// allowDangerousHtml keeps raw HTML — and any markup a plugin injected —
+			// as `raw` nodes instead of discarding it. Without it, every component a
+			// plugin emits would vanish between markdown and HTML.
+			.use(remarkRehype, { allowDangerousHtml: true })
+			// Before the caller's own rehype plugins so they can see the assigned
+			// ids, and before KaTeX so the ids derive from prose. See rehypeHeadings.
+			.use(
+				headings
+					? [
+							[
+								rehypeHeadings,
+								{
+									levels:
+										typeof headings === 'object' ? headings.levels : undefined,
+									katexOptions
+								}
+							]
+						]
+					: []
+			)
+			.use(rehypePlugins)
+			.use(math ? [[rehypeKatex, katexOptions]] : [])
+			// After KaTeX: its MathML carries the original LaTeX in an <annotation>,
+			// braces included, and that has to be escaped like any other text.
+			.use(rehypeEscapeSvelteBraces)
+			.use(rehypeStringify, { allowDangerousHtml: true })
 	);
 }
 
@@ -142,8 +154,10 @@ export function createProcessor(options = {}) {
  * Render markdown to HTML and collect its metadata.
  *
  * @param {string} source Markdown, frontmatter included.
- * @param {SkavexOptions & {filename?: string}} [options]
- * @returns {Promise<{html: string, metadata: Record<string, unknown>}>}
+ * @param {SkavexOptions & {filename?: string}} [options] Pipeline options;
+ *   `filename` is used for diagnostics only.
+ * @returns {Promise<{html: string, metadata: DocumentMetadata}>} The rendered
+ *   HTML and the document's metadata.
  */
 export async function render(source, options = {}) {
 	const file = await createProcessor(options).process({
@@ -153,7 +167,7 @@ export async function render(source, options = {}) {
 
 	return {
 		html: String(file),
-		metadata: /** @type {Record<string, unknown>} */ (file.data.fm ?? {})
+		metadata: /** @type {DocumentMetadata} */ (file.data.fm ?? {})
 	};
 }
 
@@ -171,7 +185,7 @@ export const LAYOUT_IDENTIFIER = 'SkavexLayout';
  * is escaped. The sequence is meaningless to JSON and to JavaScript, so the
  * parsed value is unchanged.
  *
- * @param {Record<string, unknown>} metadata
+ * @param {DocumentMetadata} metadata The document's metadata.
  * @returns {string} A JavaScript object literal.
  */
 function serialiseMetadata(metadata) {
@@ -181,11 +195,12 @@ function serialiseMetadata(metadata) {
 /**
  * Assemble the Svelte component source for a rendered document.
  *
- * @param {Object} input
- * @param {string} input.html
- * @param {Record<string, unknown>} input.metadata
- * @param {string} [input.layout]
- * @param {import('./components.js').DiscoveredComponent[]} input.components
+ * @param {object} input The rendered document and what to wrap it in.
+ * @param {string} input.html The document body, already HTML.
+ * @param {DocumentMetadata} input.metadata Exported from the generated module.
+ * @param {string} [input.layout] Import specifier for a wrapping component.
+ * @param {import('./components.js').DiscoveredComponent[]} input.components Components
+ *   the markup refers to, which the module must import.
  * @returns {string} Svelte source, ready for the Svelte compiler.
  */
 export function buildModule({ html, metadata, layout, components }) {

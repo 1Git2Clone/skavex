@@ -6,6 +6,14 @@
 
 	let source = $state(SAMPLE);
 	let tab = $state('Rendered');
+	/**
+	 * @type {{
+	 *   html: string,
+	 *   code: string,
+	 *   metadata: import('../../src/browser.js').DocumentMetadata,
+	 *   error: string
+	 * }}
+	 */
 	let output = $state({ html: '', code: '', metadata: {}, error: '' });
 	/** @type {HTMLElement | undefined} */
 	let preview = $state();
@@ -37,9 +45,12 @@
 			const code = buildModule({ html, metadata, components: [] });
 			if (request !== latest) return;
 			output = { html, code, metadata, error: '' };
-		} catch (/** @type {any} */ error) {
+		} catch (error) {
 			if (request !== latest) return;
-			output = { ...output, error: String(error?.message ?? error) };
+			output = {
+				...output,
+				error: error instanceof Error ? error.message : String(error)
+			};
 		}
 		elapsed = performance.now() - started;
 	}
@@ -58,11 +69,7 @@
 		}
 	});
 
-	const headings = $derived(
-		/** @type {{id: string, level: number, html: string}[]} */ (
-			/** @type {any} */ (output.metadata).headings ?? []
-		)
-	);
+	const headings = $derived(output.metadata.headings ?? []);
 </script>
 
 <header>
@@ -100,6 +107,14 @@
 			     because the only author is whoever is typing. Never wire this pane to
 			     a URL parameter — that would turn it into a link-shaped XSS. -->
 			<div class="output prose" bind:this={preview}>
+				<!--
+					Raw HTML is the point: skavex renders with allowDangerousHtml so
+					documents can carry markup, and the only author here is whoever is
+					typing into the pane beside it. That is what makes it safe, and it
+					stops being true the moment this pane's source is anything but the
+					textarea — a URL parameter would turn it into a link-shaped XSS.
+				-->
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				{@html output.html}
 			</div>
 		{:else if tab === 'Svelte source'}
@@ -111,6 +126,12 @@
 					{#each headings as heading (heading.id)}
 						<!-- Maths renders in navigation too, from the same KaTeX options. -->
 						<li style="--depth: {heading.level - 2}">
+							<!--
+								KaTeX markup this library produced a moment ago from the same
+								editor contents, so it is no more user-controlled than the pane
+								above.
+							-->
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							<a href="#{heading.id}">{@html heading.html}</a>
 						</li>
 					{/each}

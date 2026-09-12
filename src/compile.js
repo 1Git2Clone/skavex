@@ -2,6 +2,7 @@ import { render, buildModule, LAYOUT_IDENTIFIER } from './browser.js';
 import { findComponents, selectUsedComponents } from './components.js';
 
 /** @typedef {import('./browser.js').SkavexOptions} SkavexOptions */
+/** @typedef {import('./browser.js').DocumentMetadata} DocumentMetadata */
 
 /**
  * Compile a markdown document into Svelte component source.
@@ -11,8 +12,11 @@ import { findComponents, selectUsedComponents } from './components.js';
  * no client-side markdown parsing and nothing to shift once hydration runs.
  *
  * @param {string} source Markdown, frontmatter included.
- * @param {SkavexOptions & {filename?: string}} [options]
- * @returns {Promise<{code: string, metadata: Record<string, unknown>, duplicates: string[]}>}
+ * @param {SkavexOptions & {filename?: string}} [options] Pipeline options;
+ *   `filename` is used for diagnostics only.
+ * @returns {Promise<{code: string, metadata: DocumentMetadata, duplicates: string[]}>}
+ *   The Svelte source, the document's metadata, and the basenames of any
+ *   components that collided so the caller can warn about them.
  */
 export async function compile(source, options = {}) {
 	const { html, metadata } = await render(source, options);

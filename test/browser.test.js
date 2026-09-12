@@ -14,7 +14,7 @@ import { render } from '../src/browser.js';
  * @returns {Promise<string>}
  */
 async function bundleForBrowser(entry) {
-	const result = /** @type {any} */ (
+	const result = /** @type {import('vite').Rollup.RollupOutput[]} */ (
 		await build({
 			logLevel: 'silent',
 			configFile: false,
@@ -26,7 +26,7 @@ async function bundleForBrowser(entry) {
 		})
 	);
 
-	return result[0].output.map((/** @type {any} */ chunk) => chunk.code ?? '').join('\n');
+	return result[0].output.map((chunk) => (chunk.type === 'chunk' ? chunk.code : '')).join('\n');
 }
 
 describe('@skavex/skavex/browser', () => {
@@ -56,6 +56,6 @@ describe('@skavex/skavex/browser', () => {
 
 		expect(html).toContain('katex-mathml');
 		expect(html).toContain('<h2 id="heading">');
-		expect(/** @type {any[]} */ (metadata.headings)).toHaveLength(1);
+		expect(metadata.headings).toHaveLength(1);
 	});
 });

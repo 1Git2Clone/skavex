@@ -13,6 +13,21 @@ text
 ## Complexity Table
 `;
 
+/**
+ * The collected headings, refusing to continue if there are none.
+ *
+ * Every test below is about what the entries contain, so a run where the
+ * feature produced nothing should fail here with that sentence rather than
+ * further down with "cannot read properties of undefined".
+ *
+ * @param {import('../src/browser.js').DocumentMetadata} metadata
+ * @returns {import('../src/headings.js').HeadingEntry[]}
+ */
+function headingsOf(metadata) {
+	if (!metadata.headings) throw new Error('no headings were collected');
+	return metadata.headings;
+}
+
 describe('slugify', () => {
 	it('lowercases, hyphenates and drops unsafe characters', () => {
 		expect(slugify('Complexity Table')).toBe('complexity-table');
@@ -32,7 +47,7 @@ describe('slugify', () => {
 describe('headings', () => {
 	it('collects every heading with its level', async () => {
 		const { metadata } = await render(DOC);
-		const headings = /** @type {any[]} */ (metadata.headings);
+		const headings = headingsOf(metadata);
 
 		expect(headings.map((h) => h.level)).toEqual([2, 3, 2]);
 		expect(headings.map((h) => h.text)).toEqual([
@@ -53,7 +68,7 @@ describe('headings', () => {
 		// from `<span class="katex">…` and would change whenever KaTeX's output
 		// did, breaking every anchor anyone had shared.
 		const { metadata, html } = await render(DOC);
-		const mathHeading = /** @type {any[]} */ (metadata.headings)[1];
+		const mathHeading = headingsOf(metadata)[1];
 
 		expect(mathHeading.id).toBe('olog-n-logarithmic-complexity');
 		expect(mathHeading.id).not.toContain('katex');
@@ -66,7 +81,7 @@ describe('headings', () => {
 		// the bug this feature exists to remove, so it is asserted directly.
 		const { metadata, html } = await render(DOC);
 
-		for (const heading of /** @type {any[]} */ (metadata.headings)) {
+		for (const heading of headingsOf(metadata)) {
 			expect(html).toContain(`id="${heading.id}"`);
 			expect(heading.id).toBe(slugify(heading.text));
 		}
@@ -74,7 +89,7 @@ describe('headings', () => {
 
 	it('renders maths in the html a table of contents displays', async () => {
 		const { metadata } = await render(DOC);
-		const mathHeading = /** @type {any[]} */ (metadata.headings)[1];
+		const mathHeading = headingsOf(metadata)[1];
 
 		expect(mathHeading.html).toContain('katex');
 		// The same KaTeX options as the body, so MathML by default: navigation
@@ -85,13 +100,13 @@ describe('headings', () => {
 
 	it('leaves plain headings as plain text in html', async () => {
 		const { metadata } = await render(DOC);
-		expect(/** @type {any[]} */ (metadata.headings)[0].html).toBe('Dictionary');
+		expect(headingsOf(metadata)[0].html).toBe('Dictionary');
 	});
 
 	it('can be narrowed to particular levels', async () => {
 		const { metadata, html } = await render(DOC, { headings: { levels: [2] } });
 
-		expect(/** @type {any[]} */ (metadata.headings).map((h) => h.level)).toEqual([2, 2]);
+		expect(headingsOf(metadata).map((h) => h.level)).toEqual([2, 2]);
 		// An h3 outside the configured levels gets no id either.
 		expect(html).not.toContain('<h3 id=');
 	});
@@ -112,18 +127,19 @@ describe('headings', () => {
 		const { metadata, html } = await render('<h2 id="chosen">Written by hand</h2>');
 
 		expect(html).toContain('<h2 id="chosen">Written by hand</h2>');
-		expect(/** @type {any[]} */ (metadata.headings)).toHaveLength(0);
+		expect(headingsOf(metadata)).toHaveLength(0);
 	});
 
 	it('owns metadata.headings, and says so rather than merging', async () => {
 		// Two sources for one key cannot both win. skavex takes it when the
 		// feature is on; a project that wants its own shape turns it off.
+		/** @returns {(tree: import('hast').Root, file: import('vfile').VFile) => void} */
 		const setOwn = () => (tree, file) => {
 			file.data.fm = { ...(file.data.fm ?? {}), headings: ['mine'] };
 		};
 
 		const taken = await render(DOC, { remarkPlugins: [setOwn] });
-		expect(/** @type {any[]} */ (taken.metadata.headings)[0]).not.toBe('mine');
+		expect(headingsOf(taken.metadata)[0]).not.toBe('mine');
 
 		const yielded = await render(DOC, { headings: false, remarkPlugins: [setOwn] });
 		expect(yielded.metadata.headings).toEqual(['mine']);
@@ -133,6 +149,6 @@ describe('headings', () => {
 		const { metadata } = await render(`---\ntitle: Post\n---\n\n## One`);
 
 		expect(metadata.title).toBe('Post');
-		expect(/** @type {any[]} */ (metadata.headings)).toHaveLength(1);
+		expect(headingsOf(metadata)).toHaveLength(1);
 	});
 });

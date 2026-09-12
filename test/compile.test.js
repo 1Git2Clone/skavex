@@ -50,6 +50,7 @@ describe('render', () => {
 	it('lets a plugin contribute metadata via data.fm', async () => {
 		// The convention downstream plugins rely on for tables of contents and
 		// reading time.
+		/** @returns {(tree: import('mdast').Root, file: import('vfile').VFile) => void} */
 		const addReadingTime = () => (tree, file) => {
 			file.data.fm = { ...(file.data.fm ?? {}), readingTime: '7 min read' };
 		};
