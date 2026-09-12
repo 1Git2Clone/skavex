@@ -8,7 +8,8 @@
  * @module
  */
 
-export { compile, render, createProcessor, buildModule } from './compile.js';
+export { compile } from './compile.js';
+export { render, createProcessor, buildModule } from './browser.js';
 export { rehypeEscapeSvelteBraces, escapeText } from './escape.js';
 export { remarkExtractFrontmatter } from './frontmatter.js';
 export { rehypeHeadings } from './headings.js';
@@ -16,7 +17,7 @@ export { slugify } from './slug.js';
 export { findComponents, selectUsedComponents, resolveComponentsDir } from './components.js';
 
 /**
- * @typedef {import('./compile.js').SkavexOptions} SkavexOptions
+ * @typedef {import('./browser.js').SkavexOptions} SkavexOptions
  * @typedef {import('./components.js').DiscoveredComponent} DiscoveredComponent
  * @typedef {import('./headings.js').HeadingEntry} HeadingEntry
  */
