@@ -48,6 +48,27 @@ async function reporting(page, assertion) {
 	}
 }
 
+/**
+ * Replace the editor's contents.
+ *
+ * Not `fill()`. On the CI runner that delivered only the first line of a
+ * multi-line document — the pane then rendered exactly what it had been given,
+ * and the test blamed the app for the missing maths. Setting the value and
+ * dispatching `input` is the same signal a paste produces and the one
+ * `bind:value` listens for, so it exercises the editor rather than Playwright's
+ * choice of text-insertion strategy.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} value
+ * @returns {Promise<void>}
+ */
+async function setSource(page, value) {
+	await page.getByLabel('Markdown').evaluate((element, text) => {
+		/** @type {HTMLTextAreaElement} */ (element).value = text;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+	}, value);
+}
+
 test.beforeEach(async ({ page }) => {
 	await page.goto('/');
 	await expect(page.locator('.prose .katex')).not.toHaveCount(0);
@@ -105,9 +126,7 @@ test('labels a component tag the browser cannot render', async ({ page }) => {
 
 test('re-renders as the document is edited', async ({ page }) => {
 	const assertClean = watchForFailures(page);
-	const editor = page.getByLabel('Markdown');
-
-	await editor.fill('## Edited\n\nNew maths: $e^{i\\pi} + 1 = 0$\n');
+	await setSource(page, '## Edited\n\nNew maths: $e^{i\\pi} + 1 = 0$\n');
 
 	await reporting(page, async () => {
 		await expect(page.locator('.prose h2')).toHaveText('Edited');
@@ -132,9 +151,7 @@ test('collects frontmatter and a table of contents that renders its maths', asyn
 });
 
 test('reports a malformed document instead of going blank', async ({ page }) => {
-	const editor = page.getByLabel('Markdown');
-
-	await editor.fill('---\ntitle: [unterminated\n---\n\nbody\n');
+	await setSource(page, '---\ntitle: [unterminated\n---\n\nbody\n');
 
 	// Either it recovers or it says why. What it must not do is render nothing
 	// and leave the reader with a blank pane and no explanation.
