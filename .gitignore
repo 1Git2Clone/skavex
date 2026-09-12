@@ -1,4 +1,8 @@
 node_modules/
+# CI's runner has no writable HOME, so pnpm puts its content-addressable store
+# here instead of under XDG_DATA_HOME. It never appears locally, which is why
+# `prettier --check .` passed on a developer machine and failed on the runner.
+.pnpm-store/
 result
 test/.tmp/
 coverage/
