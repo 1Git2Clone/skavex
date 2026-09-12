@@ -3,6 +3,65 @@
 Notable changes per release. This file starts at 0.3.0; for 0.1.0 through
 0.2.1, `git log` is the record.
 
+## 0.4.0
+
+### Changed — metadata is generic, and `headings` is no longer special
+
+skavex had one option, `headings`, that collected a table of contents onto
+`metadata.headings`, on by default, with a field spelled out in
+`DocumentMetadata` for it. Nothing else the document tree can produce got that
+treatment — not a reading time, not the outbound links, not the languages of
+the code blocks, not a word count — which made the core of the library carry one
+project's requirement as if it were everybody's.
+
+It is now what it always was underneath: a plugin.
+
+```js
+// before — always on, configured through the pipeline
+skavex({ headings: { levels: [2, 3] } });
+
+// after — opt in, like any other plugin
+import { rehypeHeadings } from '@skavex/skavex/plugins';
+
+skavex({ rehypePlugins: [[rehypeHeadings, { levels: [2, 3] }]] });
+```
+
+`rehypePlugins` is the stage that runs before KaTeX, so the ordering guarantee
+the collector depends on — ids derived from the prose rather than from KaTeX's
+markup — is preserved by putting it there. It is the same plugin, unchanged.
+
+**This is breaking in three ways:**
+
+- The `headings` option is gone. Passing it warns once and is otherwise
+  ignored — an ignored option looks exactly like a working one until someone
+  notices the table of contents is empty. TypeScript callers get an
+  excess-property error instead. The warning goes away in 0.5.0.
+- Headings no longer get ids unless the plugin is on. Anchors, and any
+  `#fragment` link into a document, depend on it.
+- `DocumentMetadata` is now plain `Record<string, unknown>`, so
+  `metadata.headings` is typed `unknown` and needs narrowing at the point of
+  use:
+
+  ```ts
+  import type { HeadingEntry } from '@skavex/skavex/plugins';
+
+  const headings = metadata.headings as HeadingEntry[] | undefined;
+  ```
+
+That last one is the deliberate part rather than a side effect. Only the project
+knows what its own pipeline produces, and a core type that names one plugin's
+output while every other plugin's is `unknown` is not a generic type — it is a
+list of whichever features happened to ship in the box.
+
+### Added
+
+- **`setMetadata(file, values)`** in `@skavex/skavex/utils` — the whole of the
+  metadata contract, made explicit. Merges rather than assigns, so a plugin
+  cannot erase what ran before it; `file.data.fm = {...}` is the same operation
+  minus that guarantee, and discards frontmatter whenever it runs second. Both
+  bundled plugins now go through it, and have no standing a plugin you write
+  does not.
+
 ## 0.3.0
 
 ### Changed — the public API is now a decision rather than a leftover

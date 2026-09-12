@@ -33,6 +33,7 @@ import rehypeKatexModern from 'rehype-katex';
 import remarkMathLegacy from 'remark-math-legacy';
 import rehypeKatexLegacy from 'rehype-katex-legacy';
 import { compile as skavexCompile } from '../src/index.js';
+import { rehypeHeadings } from '../src/plugins.js';
 
 /**
  * @typedef {object} Engine
@@ -64,7 +65,11 @@ export const ENGINES = [
 		id: 'skavex',
 		label: 'skavex',
 		note: 'unified 11, KaTeX at build time',
-		compile: async (source) => (await skavexCompile(source)).code
+		// Configured the way a site configures it, heading collection included.
+		// That plugin is opt-in, and measuring skavex without it would compare a
+		// pipeline doing less work against engines doing more.
+		compile: async (source) =>
+			(await skavexCompile(source, { rehypePlugins: [rehypeHeadings] })).code
 	},
 	{
 		id: 'bare',

@@ -167,17 +167,16 @@ const { default: Post, metadata } = posts['/src/content/hello.md'];
 
 ## Options
 
-| Option          | Type                | Default     | Meaning                                                                                             |
-| --------------- | ------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
-| `extensions`    | `string[]`          | `['.md']`   | Which files are documents.                                                                          |
-| `layout`        | `string`            | —           | Component wrapping every document. Gets the metadata as props; the body is its `children`.          |
-| `components`    | `string`            | —           | Directory of `.svelte` files addressable by basename, so plugins can emit `<YouTube />` freely.     |
-| `headings`      | `boolean \| object` | `true`      | Stable heading ids plus `metadata.headings` for a table of contents. `{ levels: [2,3] }` narrows.   |
-| `gfm`           | `boolean`           | `true`      | Tables, strikethrough, task lists, autolinks.                                                       |
-| `math`          | `boolean \| object` | `true`      | LaTeX. An object overrides KaTeX options.                                                           |
-| `remarkPlugins` | `PluggableList`     | `[]`        | Run after frontmatter/GFM/math, before conversion to HTML.                                          |
-| `rehypePlugins` | `PluggableList`     | `[]`        | Run on the HTML tree **before** KaTeX, so plugins reading heading text see prose, not KaTeX markup. |
-| `root`          | `string`            | Vite's root | What `components` resolves against.                                                                 |
+| Option          | Type                | Default     | Meaning                                                                                                                                 |
+| --------------- | ------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `extensions`    | `string[]`          | `['.md']`   | Which files are documents.                                                                                                              |
+| `layout`        | `string`            | —           | Component wrapping every document. Gets the metadata as props; the body is its `children`.                                              |
+| `components`    | `string`            | —           | Directory of `.svelte` files addressable by basename, so plugins can emit `<YouTube />` freely.                                         |
+| `gfm`           | `boolean`           | `true`      | Tables, strikethrough, task lists, autolinks.                                                                                           |
+| `math`          | `boolean \| object` | `true`      | LaTeX. An object overrides KaTeX options.                                                                                               |
+| `remarkPlugins` | `PluggableList`     | `[]`        | Run after frontmatter/GFM/math, before conversion to HTML.                                                                              |
+| `rehypePlugins` | `PluggableList`     | `[]`        | Run on the HTML tree **before** KaTeX, so a plugin reading element text sees prose, not KaTeX markup. Where metadata collectors belong. |
+| `root`          | `string`            | Vite's root | What `components` resolves against.                                                                                                     |
 
 Maths renders as **HTML and MathML** by default. HTML alone looks correct and is
 completely silent to a screen reader, which makes maths-heavy writing unreadable
@@ -192,22 +191,52 @@ has, but for a maths-heavy site it is the first thing to try.
 
 ## Metadata
 
-YAML frontmatter is parsed into `file.data.fm` and exported as `metadata`. Any
-plugin may add to the same object, which is how a table of contents or a reading
-time ends up on the export:
+`metadata` is an open object, and skavex puts nothing of its own in it. YAML
+frontmatter is one contributor; a plugin is another. What a document exports is
+whatever the pipeline left there.
+
+`setMetadata` is the entire contract — it merges, so a plugin cannot erase what
+ran before it:
 
 ```js
+import { setMetadata } from '@skavex/skavex/utils';
+
 export function remarkReadingTime() {
 	return (tree, file) => {
-		file.data.fm = { ...(file.data.fm ?? {}), readingTime: estimate(tree) };
+		setMetadata(file, { readingTime: estimate(tree) });
 	};
 }
 ```
 
+A document tree can be asked for a great deal: a table of contents, a reading
+time, the outbound links, the languages of the code blocks, a word count, the
+first image, the footnotes. Which of those a given site wants is not skavex's
+decision to make, so it ships one of them as an optional plugin
+([`rehypeHeadings`](#headings-and-tables-of-contents)) and no others, and gives
+every plugin the same way in.
+
+Because the shape is the project's, values arrive typed `unknown`. Narrow them
+where they are consumed:
+
+```ts
+import type { HeadingEntry } from '@skavex/skavex/plugins';
+
+const headings = metadata.headings as HeadingEntry[] | undefined;
+```
+
 ## Headings and tables of contents
 
-Every heading gets an `id`, and all of them are collected onto
-`metadata.headings`:
+`rehypeHeadings` gives every heading an `id` and collects them onto
+`metadata.headings`. It is off unless you ask for it:
+
+```js
+import { rehypeHeadings } from '@skavex/skavex/plugins';
+
+skavex({ rehypePlugins: [rehypeHeadings] });
+// or [[rehypeHeadings, { levels: [2, 3] }]] to narrow it to h2 and h3
+```
+
+Each entry:
 
 ```js
 {
@@ -220,7 +249,7 @@ Every heading gets an `id`, and all of them are collected onto
 
 Two things this exists to get right, both easy to get wrong by hand.
 
-**The id comes from the prose, not from KaTeX.** Collection runs _before_
+**The id comes from the prose, not from KaTeX.** `rehypePlugins` runs _before_
 KaTeX, so `### $O(\log n)$ - Logarithmic Complexity` slugifies from the LaTeX
 source. Do it afterwards and the slug is built from `<span class="katex">…`,
 which changes whenever KaTeX's output does — silently breaking every anchor
@@ -235,11 +264,13 @@ Import the same function instead:
 import { slugify } from '@skavex/skavex';
 ```
 
-`html` renders maths with the same KaTeX options as the body, so a formula
-looks — and reads, to a screen reader — the same in the sidebar as in the text.
+`html` carries the heading with its maths typeset. Pass the same options you
+gave `math` — `[[rehypeHeadings, { katexOptions }]]` — and a formula looks, and
+reads to a screen reader, the same in the sidebar as in the text.
 
-skavex owns `metadata.headings` while this is on. A project wanting its own
-shape sets `headings: false` and writes a plugin.
+Nothing here is privileged. A project wanting a different shape writes its own
+plugin the same way this one is written, and does not use this one — there is no
+option to turn off, because there is nothing on.
 
 ## Writing a plugin that injects a component
 

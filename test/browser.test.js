@@ -52,10 +52,9 @@ describe('@skavex/skavex/browser', () => {
 
 	it('renders markdown, maths included, through the browser entry', async () => {
 		// Bundling cleanly is not enough — the entry has to actually be the library.
-		const { html, metadata } = await render('## Heading\n\nInline $O(n)$ math.');
+		const { html, metadata } = await render('---\ntitle: Post\n---\n\nInline $O(n)$ math.');
 
 		expect(html).toContain('katex-mathml');
-		expect(html).toContain('<h2 id="heading">');
-		expect(metadata.headings).toHaveLength(1);
+		expect(metadata.title).toBe('Post');
 	});
 });

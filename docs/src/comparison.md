@@ -50,10 +50,13 @@ is the version trap above, not a separate limitation.
 |                               | skavex     | mdsvex      |
 | ----------------------------- | ---------- | ----------- |
 | unified version               | yours (11) | 8, pinned   |
-| Heading ids                   | yes        | no          |
-| `metadata.headings` for a TOC | yes        | no          |
-| Maths rendered in TOC entries | yes        | n/a         |
+| Heading ids                   | plugin     | no          |
+| `metadata.headings` for a TOC | plugin     | no          |
+| Maths rendered in TOC entries | plugin     | n/a         |
 | Actively developed            | yes        | maintenance |
+
+"plugin" means `rehypeHeadings`, bundled and opt-in: `rehypePlugins:
+[rehypeHeadings]`. mdsvex has no equivalent to turn on.
 
 ## Speed
 

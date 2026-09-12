@@ -23,7 +23,6 @@ import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
 
 import { remarkExtractFrontmatter } from './frontmatter.js';
-import { rehypeHeadings } from './headings.js';
 import { rehypeEscapeSvelteBraces } from './escape.js';
 
 /**
@@ -45,11 +44,6 @@ import { rehypeEscapeSvelteBraces } from './escape.js';
  *                                      arranging its own import.
  * @property {string} [root]            Project root that `components` resolves against.
  *                                      Default `process.cwd()`; the Vite plugin supplies Vite's.
- * @property {boolean|{levels?: number[]}} [headings]
- *                                      Give headings stable ids and collect them onto
- *                                      `metadata.headings` for a table of contents. Runs before
- *                                      KaTeX, so an id follows the prose rather than KaTeX's
- *                                      markup. Default `true`; pass `{levels}` to narrow.
  * @property {boolean} [gfm]            GitHub Flavored Markdown: tables, strikethrough,
  *                                      task lists, autolinks. Default `true`.
  * @property {boolean|Record<string, unknown>} [math]
@@ -63,22 +57,32 @@ import { rehypeEscapeSvelteBraces } from './escape.js';
  *                                      to HTML. Where document-level plugins belong.
  * @property {import('unified').PluggableList} [rehypePlugins]
  *                                      Run on the HTML tree BEFORE KaTeX, so a plugin reading
- *                                      heading text sees the prose rather than KaTeX's markup.
+ *                                      element text sees the prose rather than KaTeX's markup.
+ *                                      Where `rehypeHeadings` and anything else deriving
+ *                                      metadata from the document belongs.
  */
 
 /**
  * A document's metadata: its frontmatter, plus whatever plugins contributed.
  *
- * The index signature is what lets a plugin add its own key — a reading time,
- * a series name — without this type knowing about it. `headings` is spelled
- * out because skavex populates it itself, and leaving it to the index
- * signature would type it `unknown` and force a cast at every single call
- * site, including inside this library's own tests. A type that makes its
- * users cast is not doing its job.
+ * Deliberately open and deliberately unopinionated. skavex names no key of its
+ * own here — a document tree can be asked for a table of contents, a reading
+ * time, its outbound links, the languages of its code blocks, a word count, and
+ * skavex has no business deciding which of those every project wants. Plugins
+ * merge in what a project actually needs, through
+ * {@link import('./utils.js').setMetadata}, and all of it is exported as the
+ * document's `metadata`.
  *
- * @typedef {Record<string, unknown> & {
- *   headings?: import('./headings.js').HeadingEntry[]
- * }} DocumentMetadata
+ * The consequence is that values arrive typed `unknown`, because only the
+ * project knows what its own pipeline produces. Narrow it where you consume it:
+ *
+ * ```ts
+ * import type { HeadingEntry } from '@skavex/skavex/plugins';
+ *
+ * const headings = metadata.headings as HeadingEntry[] | undefined;
+ * ```
+ *
+ * @typedef {Record<string, unknown>} DocumentMetadata
  */
 
 /**
@@ -92,6 +96,35 @@ import { rehypeEscapeSvelteBraces } from './escape.js';
  * @type {Record<string, unknown>}
  */
 const DEFAULT_KATEX_OPTIONS = { output: 'htmlAndMathml', strict: false };
+
+/** Whether the removed-option warning has already been printed. */
+let warnedAboutHeadings = false;
+
+/**
+ * Warn once if a caller still passes the `headings` option removed in 0.4.0.
+ *
+ * An unknown option is otherwise ignored in silence, and the symptom — a table
+ * of contents that is suddenly empty and headings that have lost their ids — is
+ * a long way from the cause. TypeScript callers get an excess-property error for
+ * free; this is for everyone else.
+ *
+ * Once per process rather than once per document, because a site has hundreds
+ * and the second line of it teaches nobody anything. Remove in 0.5.0.
+ *
+ * @param {SkavexOptions} options The options as given.
+ * @returns {void}
+ */
+function warnAboutRemovedHeadingsOption(options) {
+	if (warnedAboutHeadings || !('headings' in options)) return;
+	warnedAboutHeadings = true;
+
+	console.warn(
+		'[skavex] The `headings` option was removed in 0.4.0 and is being ignored. ' +
+			'Headings are collected by a plugin now:\n' +
+			"  import { rehypeHeadings } from '@skavex/skavex/plugins';\n" +
+			'  skavex({ rehypePlugins: [rehypeHeadings] })'
+	);
+}
 
 /**
  * Build the unified processor for a set of options.
@@ -110,13 +143,9 @@ const DEFAULT_KATEX_OPTIONS = { output: 'htmlAndMathml', strict: false };
  *   A processor whose `process` yields the rendered HTML.
  */
 export function createProcessor(options = {}) {
-	const {
-		gfm = true,
-		math = true,
-		headings = true,
-		remarkPlugins = [],
-		rehypePlugins = []
-	} = options;
+	const { gfm = true, math = true, remarkPlugins = [], rehypePlugins = [] } = options;
+
+	warnAboutRemovedHeadingsOption(options);
 
 	const katexOptions =
 		typeof math === 'object' ? { ...DEFAULT_KATEX_OPTIONS, ...math } : DEFAULT_KATEX_OPTIONS;
@@ -133,22 +162,9 @@ export function createProcessor(options = {}) {
 			// as `raw` nodes instead of discarding it. Without it, every component a
 			// plugin emits would vanish between markdown and HTML.
 			.use(remarkRehype, { allowDangerousHtml: true })
-			// Before the caller's own rehype plugins so they can see the assigned
-			// ids, and before KaTeX so the ids derive from prose. See rehypeHeadings.
-			.use(
-				headings
-					? [
-							[
-								rehypeHeadings,
-								{
-									levels:
-										typeof headings === 'object' ? headings.levels : undefined,
-									katexOptions
-								}
-							]
-						]
-					: []
-			)
+			// Before KaTeX, so a plugin reading an element's text sees the prose the
+			// author wrote rather than KaTeX's markup. That ordering is the reason
+			// this stage exists where it does; see src/plugins.js.
 			.use(rehypePlugins)
 			.use(math ? [[rehypeKatex, katexOptions]] : [])
 			// After KaTeX: its MathML carries the original LaTeX in an <annotation>,

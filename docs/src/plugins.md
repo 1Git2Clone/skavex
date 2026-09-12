@@ -59,16 +59,27 @@ the template literal.
 
 ## Adding to the metadata
 
-Any plugin may write to `file.data.fm`, and whatever is there is exported as
-`metadata`:
+`metadata` is an open object with nothing of skavex's own in it. Call
+`setMetadata` and whatever you put there is exported:
 
 ```js
+import { setMetadata } from '@skavex/skavex/utils';
+
 export function remarkReadingTime() {
 	return (tree, file) => {
-		file.data.fm = { ...(file.data.fm ?? {}), readingTime: estimate(tree) };
+		setMetadata(file, { readingTime: estimate(tree) });
 	};
 }
 ```
+
+It merges rather than assigns, which matters because a plugin does not know
+what ran before it. `file.data.fm = {...}` is the same operation minus that
+guarantee, and discards the author's frontmatter whenever it runs second.
+
+This is how every metadata key gets there, skavex's own bundled plugin
+included — `rehypeHeadings` is thirty lines around one `setMetadata` call, and
+a plugin you write has exactly the same standing. Later writers win, so
+ordering decides who owns a contested key.
 
 ## Giving markdown a syntax it does not have
 

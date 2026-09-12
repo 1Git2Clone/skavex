@@ -1,6 +1,7 @@
 import { visit } from 'unist-util-visit';
 import katex from 'katex';
 import { slugify } from './slug.js';
+import { setMetadata } from './utils.js';
 
 /**
  * One heading, as a table of contents needs it.
@@ -64,18 +65,30 @@ function htmlOf(node, katexOptions) {
 }
 
 /**
- * Rehype plugin that gives headings stable ids and collects them for a table
- * of contents.
+ * Rehype plugin that gives headings stable ids and collects them onto
+ * `metadata.headings` for a table of contents.
  *
- * Runs BEFORE KaTeX, and that ordering is the point. Afterwards a heading
- * containing maths has KaTeX's markup as its text content, so an id derived
- * then would be a slug of `<span class="katex">…`, changing whenever KaTeX's
- * output does. Deriving it here means the id follows the prose the author
- * wrote.
+ * Opt in through `rehypePlugins` — skavex runs no metadata collector of its
+ * own, and a table of contents is one thing a document tree can be asked for
+ * among many:
  *
- * The `html` field carries maths rendered with the same KaTeX options as the
- * document body, so a formula looks the same in the navigation as it does in
- * the text.
+ * ```js
+ * import { rehypeHeadings } from '@skavex/skavex/plugins';
+ *
+ * skavex({ rehypePlugins: [rehypeHeadings] })
+ * ```
+ *
+ * It must run BEFORE KaTeX, and `rehypePlugins` is the stage that does.
+ * Afterwards a heading containing maths has KaTeX's markup as its text
+ * content, so an id derived then would be a slug of `<span class="katex">…`,
+ * changing whenever KaTeX's output does. Running here means the id follows the
+ * prose the author wrote.
+ *
+ * The `html` field carries the heading with its maths already typeset. Pass
+ * `katexOptions` to match whatever was given to the `math` option, so a formula
+ * looks the same in the navigation as it does in the text; the default renders
+ * it the way KaTeX would out of the box, which is what the default `math`
+ * option produces too.
  *
  * A heading that already has an id keeps it: an author who wrote one meant it,
  * and it may already be linked from elsewhere.
@@ -105,7 +118,6 @@ export function rehypeHeadings(options = {}) {
 			headings.push({ id, level, text, html: htmlOf(node, katexOptions) });
 		});
 
-		const existing = /** @type {Record<string, unknown>} */ (file.data.fm ?? {});
-		file.data.fm = { ...existing, headings };
+		setMetadata(file, { headings });
 	};
 }

@@ -1,14 +1,18 @@
 import { visit } from 'unist-util-visit';
 import { parse as parseYaml } from 'yaml';
 
+import { setMetadata } from './utils.js';
+
 /**
  * Remark plugin that lifts the YAML frontmatter block into `file.data.fm`.
  *
  * `remark-frontmatter` only teaches the parser to recognise the block; it does
- * not interpret it. This reads that node and merges the result into
- * `file.data.fm`, which is the convention the rest of the pipeline uses:
- * any downstream plugin may add to the same object (a table of contents,
- * a reading time) and every key ends up on the document's exported metadata.
+ * not interpret it. This reads that node and merges the result into the
+ * document's metadata via {@link import('./utils.js').setMetadata}.
+ *
+ * Frontmatter is a contributor to that object, not the owner of it: any plugin
+ * may merge in its own keys the same way, and every key ends up on the
+ * document's exported `metadata`.
  *
  * The `yaml` node is left in the tree. `remark-rehype` has no handler for it,
  * so it is dropped on the way to HTML and never reaches the page.
@@ -22,8 +26,7 @@ export function remarkExtractFrontmatter() {
 			const parsed = parseYaml(node.value);
 			if (parsed === null || typeof parsed !== 'object') return;
 
-			const existing = /** @type {Record<string, unknown>} */ (file.data.fm ?? {});
-			file.data.fm = { ...existing, ...parsed };
+			setMetadata(file, /** @type {Record<string, unknown>} */ (parsed));
 		});
 	};
 }

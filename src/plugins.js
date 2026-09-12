@@ -1,16 +1,29 @@
 /**
- * The unified plugins skavex is built from.
+ * The unified plugins skavex ships.
  *
- * A separate entry point because these are for one job: assembling a pipeline
- * by hand, when {@link import('./browser.js').createProcessor} does not arrange
- * things the way you need. Most projects never import from here — the Vite
- * plugin and `compile` already run all three in the order they have to run in,
- * and that order is the awkward part.
+ * Two of these the pipeline always runs — `remarkExtractFrontmatter` and
+ * `rehypeEscapeSvelteBraces` — because a document would not survive without
+ * them. They are exported for the case where `createProcessor` does not arrange
+ * things the way you need and you are assembling a pipeline by hand.
  *
- * If you do build your own: `rehypeHeadings` must run BEFORE KaTeX, or ids are
- * derived from KaTeX's markup instead of the prose, and
- * `rehypeEscapeSvelteBraces` must run LAST, after every plugin that injects
- * markup, or it will escape braces belonging to a component tag.
+ * `rehypeHeadings` is the other kind: an optional plugin, off unless you ask
+ * for it, that derives one particular thing from the document and merges it
+ * into the metadata. Nothing distinguishes it from a plugin you write yourself
+ * except that it is here — see `@skavex/skavex/utils` for `setMetadata`, which
+ * is the whole of what it uses to contribute.
+ *
+ * ```js
+ * import { rehypeHeadings } from '@skavex/skavex/plugins';
+ *
+ * skavex({ rehypePlugins: [rehypeHeadings] });
+ * ```
+ *
+ * Two orderings matter if you assemble the pipeline yourself:
+ * `rehypeHeadings`, and anything else reading an element's text, must run
+ * BEFORE KaTeX — afterwards the text is KaTeX's markup rather than the prose —
+ * and `rehypeEscapeSvelteBraces` must run LAST, after every plugin that injects
+ * markup, or it escapes braces belonging to a component tag. The `rehypePlugins`
+ * option already sits between the two.
  *
  * @module
  */

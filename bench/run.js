@@ -38,8 +38,9 @@ const GUARANTEES = {
 
 	// The bare pipeline is a floor rather than a rival: it collects no headings,
 	// renders no table of contents, escapes no prose, and its output does not
-	// compile. skavex costs more than it by design, and this is the number worth
-	// watching — the price of those features, which should not quietly creep up.
+	// compile. skavex is measured with the headings plugin on, the way a site
+	// configures it, so this is the price of those features — the number worth
+	// watching, because it should not quietly creep up.
 	//
 	// Measured across five runs at 1.17x to 1.47x, so the ceiling clears the top
 	// of that range rather than sitting on it. A gate that a clean checkout

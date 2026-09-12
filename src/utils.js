@@ -1,11 +1,46 @@
 /**
- * Helpers for writing plugins that inject Svelte markup.
+ * Helpers for writing plugins.
  *
- * Nothing here is required to use skavex. They exist because every plugin that
- * emits a component re-derives the same two things — how to escape a template
- * literal, and how to recognise a paragraph that is nothing but a link — and
- * getting either subtly wrong produces markup that fails to compile.
+ * Nothing here is required to use skavex. They exist because every plugin
+ * re-derives the same few things — how a plugin contributes metadata, how to
+ * escape a template literal, how to recognise a paragraph that is nothing but a
+ * link — and getting any of them subtly wrong produces markup that fails to
+ * compile, or metadata that silently replaces somebody else's.
  */
+
+/**
+ * Contribute keys to a document's metadata.
+ *
+ * This is the whole of skavex's metadata contract: metadata is an open object,
+ * anything may write to it, and what a document exports as `metadata` is
+ * whatever the pipeline left there. Frontmatter is one contributor and has no
+ * special standing; a plugin adding a reading time, a table of contents, the
+ * outbound links, the languages of the code blocks — or anything else the tree
+ * can be asked for — is another.
+ *
+ * Merges rather than assigns, because a plugin does not know what ran before
+ * it. Writing `file.data.fm = {...}` directly is the same operation minus that
+ * guarantee, and discards frontmatter whenever it runs second.
+ *
+ * ```js
+ * export function remarkReadingTime() {
+ *   return (tree, file) => {
+ *     const words = toString(tree).split(/\s+/).length;
+ *     setMetadata(file, { readingTime: Math.ceil(words / 200) });
+ *   };
+ * }
+ * ```
+ *
+ * @param {import('vfile').VFile} file The file being processed.
+ * @param {Record<string, unknown>} values Keys to merge in. Later writes to the
+ *   same key win, so a plugin that must not override an author's frontmatter
+ *   should check `file.data.fm` first.
+ * @returns {void}
+ */
+export function setMetadata(file, values) {
+	const existing = /** @type {Record<string, unknown>} */ (file.data.fm ?? {});
+	file.data.fm = { ...existing, ...values };
+}
 
 /**
  * Escape a string for inclusion in a JavaScript template literal.

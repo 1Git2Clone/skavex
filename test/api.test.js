@@ -31,12 +31,13 @@ const SURFACE = {
 	],
 	// For assembling a pipeline by hand instead of using createProcessor.
 	'./plugins': ['rehypeEscapeSvelteBraces', 'rehypeHeadings', 'remarkExtractFrontmatter'],
-	// For writing a plugin that injects a component.
+	// For writing a plugin: contributing metadata, injecting a component.
 	'./utils': [
 		'componentNode',
 		'escapeTemplateLiteral',
 		'getBareLinkFromParagraph',
-		'rawHtmlExpression'
+		'rawHtmlExpression',
+		'setMetadata'
 	]
 };
 

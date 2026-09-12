@@ -14,8 +14,8 @@
  *   filesystem, for a live preview, a worker or an edge runtime.
  * - `@skavex/skavex/plugins` — the unified plugins skavex is built from, for
  *   assembling a pipeline by hand.
- * - `@skavex/skavex/utils` — helpers for writing a plugin that injects a
- *   component.
+ * - `@skavex/skavex/utils` — helpers for writing a plugin: contributing
+ *   metadata, injecting a component.
  *
  * @module
  */
@@ -27,5 +27,4 @@ export { slugify } from './slug.js';
 /**
  * @typedef {import('./browser.js').SkavexOptions} SkavexOptions
  * @typedef {import('./browser.js').DocumentMetadata} DocumentMetadata
- * @typedef {import('./headings.js').HeadingEntry} HeadingEntry
  */

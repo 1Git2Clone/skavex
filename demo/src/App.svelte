@@ -6,6 +6,7 @@
 		selectUsedComponents,
 		referencedComponents
 	} from '@skavex/skavex/browser';
+	import { rehypeHeadings } from '@skavex/skavex/plugins';
 	import { buildComponent, loadPlugin } from './build.js';
 	import {
 		DOCUMENT,
@@ -85,8 +86,10 @@
 		try {
 			/** @type {import('unified').PluggableList} */
 			const remarkPlugins = [];
+			// Opt-in, like any other plugin: skavex collects no metadata on its
+			// own. The table of contents on the right is what this one contributes.
 			/** @type {import('unified').PluggableList} */
-			const rehypePlugins = [];
+			const rehypePlugins = [rehypeHeadings];
 
 			for (const file of workspace.plugins) {
 				const { plugin, stage } = await loadPlugin(file);
@@ -171,7 +174,11 @@
 		return () => style.remove();
 	});
 
-	const headings = $derived(output.metadata.headings ?? []);
+	const headings = $derived(
+		/** @type {import('@skavex/skavex/plugins').HeadingEntry[]} */ (
+			output.metadata.headings ?? []
+		)
+	);
 	const focusedComponent = $derived(
 		components.find((file) => `components/${file.name}.svelte` === focused)
 	);
