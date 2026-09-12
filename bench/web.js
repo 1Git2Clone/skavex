@@ -6,6 +6,11 @@
  * first paint, and when it is rendered by a script after load the text reflows
  * underneath them.
  *
+ * mdsvex is measured here too, and it comes out the same as skavex. That is
+ * the finding, not an omission: both render at build time, so on delivery they
+ * are equivalent, and this table is not a reason to choose between them. It
+ * measures build-time maths against browser-time maths.
+ *
  * The client-side page is not a strawman. Its body is literally what
  * mdsvex + remark-math 6 produces — maths left as `$…$` text — with KaTeX's
  * auto-render script bolted on, which is exactly what a project does once it
@@ -60,12 +65,21 @@ async function buildPages() {
 
 	const { html } = await render(source);
 
-	const mdsvex = /** @type {any} */ (ENGINES.find((engine) => engine.id === 'mdsvex-modern'));
-	const unrendered = (await mdsvex.compile(source)).replace(/<script[\s\S]*?<\/script>/g, '');
+	/** @param {string} id */
+	const compileWith = async (id) => {
+		const engine = /** @type {any} */ (ENGINES.find((candidate) => candidate.id === id));
+		// Drop the Svelte blocks; what is being served is a plain page.
+		return (await engine.compile(source)).replace(/<script[\s\S]*?<\/script>/g, '');
+	};
+
+	const unrendered = await compileWith('mdsvex-modern');
 
 	return {
 		// No script at all. The maths is already in the HTML.
 		'/ssr.html': page(html, ''),
+		// The control: mdsvex also renders at build time, and should land in the
+		// same place. If it ever does not, the difference is worth knowing.
+		'/mdsvex.html': page(await compileWith('mdsvex-legacy'), ''),
 		// KaTeX's own auto-render, the way its documentation recommends wiring it.
 		'/client.html': page(
 			unrendered,
@@ -171,6 +185,7 @@ const results = [];
 
 for (const [route, label, note] of [
 	['/ssr.html', 'skavex (maths in the HTML)', 'no script on the page at all'],
+	['/mdsvex.html', 'mdsvex + math 3 (also in the HTML)', 'the control: build-time maths too'],
 	['/client.html', 'client-side KaTeX', 'what a project adds when the maths never appeared']
 ]) {
 	const metrics = await audit(`${server.url}${route}`, port);

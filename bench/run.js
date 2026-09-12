@@ -30,11 +30,21 @@ const SAMPLES = 7;
  * deterministic and therefore safe to gate on exactly.
  */
 const GUARANTEES = {
-	// skavex was 1.13x the throughput of working mdsvex when this was written.
-	// The floor is well under that: it is here to catch a pipeline change that
-	// makes skavex materially slower than the alternative, not to defend a
-	// number that was never the point.
+	// skavex is not fast, and nothing here pretends it is. It sits at parity
+	// with working mdsvex, so the floor catches a change that makes it
+	// materially slower than the alternative rather than defending a lead it
+	// does not have.
 	minSpeedRatioVsWorkingMdsvex: 0.9,
+
+	// And it is SLOWER than the bare pipeline by design — it collects headings,
+	// renders maths for a table of contents and escapes prose, none of which the
+	// bare one does. This is the number worth watching: it is the price of those
+	// features, and it should not quietly creep up.
+	//
+	// Measured across five runs at 1.17x to 1.47x, so the ceiling clears the top
+	// of that range rather than sitting on it. A gate that a clean checkout
+	// fails one time in five teaches people to rerun the job, not to read it.
+	maxOverheadVsBarePipeline: 1.8,
 
 	// These are exact because they are deterministic. Each corresponds to
 	// something that silently did not happen in a real project.
@@ -133,6 +143,7 @@ function check(report) {
 
 	const skavex = find('skavex');
 	const working = find('mdsvex-legacy');
+	const bare = find('bare');
 
 	for (const [key, expected] of Object.entries(GUARANTEES.skavex)) {
 		const actual = skavex.features[key];
@@ -150,6 +161,14 @@ function check(report) {
 		);
 	}
 
+	const overhead = skavex.msPerDoc / bare.msPerDoc;
+	if (overhead > GUARANTEES.maxOverheadVsBarePipeline) {
+		failures.push(
+			`skavex now costs ${overhead.toFixed(2)}x the bare unified pipeline, ` +
+				`ceiling is ${GUARANTEES.maxOverheadVsBarePipeline}x`
+		);
+	}
+
 	return failures;
 }
 
@@ -162,6 +181,13 @@ await writeFile(
 console.log(table(report));
 console.log(
 	`\nnode ${report.node}, ${report.documents} documents, median of ${report.samples} samples`
+);
+
+const skavexResult = report.results.find((/** @type {any} */ r) => r.id === 'skavex');
+const bareResult = report.results.find((/** @type {any} */ r) => r.id === 'bare');
+console.log(
+	`skavex costs ${(skavexResult.msPerDoc / bareResult.msPerDoc).toFixed(2)}x the bare pipeline, ` +
+		`for heading data, a rendered table of contents and output that compiles.`
 );
 
 if (process.argv.includes('--check')) {

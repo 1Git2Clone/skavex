@@ -42,31 +42,54 @@ unified version is yours to choose.
 
 ## How it compares
 
-Measured, not claimed — `pnpm bench` regenerates every number, and CI fails if
-one regresses. Full breakdown with the method in [BENCHMARKS.md](https://git.hu-tao.dev/skavex/skavex/src/branch/main/BENCHMARKS.md).
+Measured, not claimed — `pnpm bench` regenerates every number and CI fails if
+one regresses. Full method in
+[BENCHMARKS.md](https://git.hu-tao.dev/skavex/skavex/src/branch/main/BENCHMARKS.md).
 
-|                                 | skavex | mdsvex + remark-math 3 | mdsvex + remark-math 6 |
-| ------------------------------- | ------ | ---------------------- | ---------------------- |
-| Formulas rendered               | 46     | 46                     | **0**                  |
-| MathML for screen readers       | 16     | 15                     | **0**                  |
-| Heading ids and TOC data        | yes    | no                     | no                     |
-| Escapes prose, keeps components | yes    | no                     | no                     |
-| Output compiles as Svelte       | yes    | **no**                 | **no**                 |
-| Throughput                      | 111/s  | 97/s                   | 297/s                  |
+|                                 | skavex  | hand-rolled unified 11 | mdsvex + math 3 | mdsvex + math 6 |
+| ------------------------------- | ------- | ---------------------- | --------------- | --------------- |
+| Formulas rendered               | 46      | 46                     | 46              | **0**           |
+| Heading ids and TOC data        | yes     | no                     | no              | no              |
+| Escapes prose, keeps components | yes     | no                     | no              | no              |
+| Output compiles as Svelte       | yes     | **no**                 | **no**          | **no**          |
+| Per document                    | 8.41 ms | **7.18 ms**            | 9.37 ms         | 2.98 ms         |
 
-Two of those need saying plainly. **Throughput is a tie** — across runs skavex
-lands between 1.01× and 1.15× working mdsvex, which is noise, and no one
-should choose an engine on it. And `remark-math 6` is not fast, it is _empty_:
-297/s is the cost of skipping every formula.
+**skavex is not fast.** It is 20–50% _slower_ than the same pipeline wired by
+hand, because it does more: it collects headings, renders their maths for a
+table of contents, and escapes prose without touching component tags. Against
+mdsvex it is a tie. And `remark-math 6` is not fast, it is _empty_ — that
+column is the cost of skipping every formula.
 
-The difference a reader feels is elsewhere. Against the same page rendering
-its maths in the browser instead:
+So the case is not speed. It is these four, which you would otherwise write
+and maintain yourself:
 
-|                            | CLS       | JavaScript | Lighthouse |
-| -------------------------- | --------- | ---------- | ---------- |
-| skavex — maths in the HTML | **0.006** | **0 kB**   | 96         |
-| client-side KaTeX          | 0.156     | 270 kB     | 86         |
+- **Braces escaped in prose, untouched in components.** Without it the output
+  is not valid Svelte — every row above except skavex fails to compile on
+  prose containing `{braces}`. mdsvex expects you to escape them by hand, in
+  every document.
+- **Components injected by tag**, from a directory, so a plugin can emit
+  `<YouTube />` without arranging imports.
+- **Heading ids and table-of-contents data**, derived from prose _before_
+  KaTeX runs, so an id never changes when KaTeX changes its markup — and with
+  the maths rendered, so navigation is not full of raw LaTeX.
+- **A unified version you choose.** mdsvex pins unified 8.4.2 (2020), so its
+  maths only works with `remark-math@3`. Pair it with the current one and it
+  compiles cleanly and emits **no maths at all** — no error, no warning,
+  nothing to search for.
 
+That last one is why this exists.
+
+### Server-rendering matters more than any of it
+
+|                                    | CLS   | JavaScript | Lighthouse |
+| ---------------------------------- | ----- | ---------- | ---------- |
+| skavex — maths in the HTML         | 0.006 | 0 kB       | 96         |
+| mdsvex + math 3 — also in the HTML | 0.006 | 0 kB       | 95         |
+| client-side KaTeX                  | 0.246 | 270 kB     | 84         |
+
+Read that honestly: skavex and mdsvex are **identical** here, because both
+render at build time. The third row is what a project ends up with after the
+maths silently fails and someone patches it with KaTeX's auto-render script.
 Core Web Vitals fails anything above `0.100`.
 
 ## Install
@@ -134,6 +157,13 @@ const { default: Post, metadata } = posts['/src/content/hello.md'];
 Maths renders as **HTML and MathML** by default. HTML alone looks correct and is
 completely silent to a screen reader, which makes maths-heavy writing unreadable
 for anyone using one. Pass `math: { output: 'html' }` to opt out.
+
+Going the other way is worth knowing about: `math: { output: 'mathml' }` drops
+KaTeX's HTML and leaves only the MathML, which every current browser renders
+natively. On the benchmark corpus that is **half the build time and a quarter
+of the page weight** — 5.7 kB against 21 kB of HTML. It is not the default
+because KaTeX's HTML looks the same regardless of which maths fonts a reader
+has, but for a maths-heavy site it is the first thing to try.
 
 ## Metadata
 
