@@ -5,9 +5,33 @@ Notable changes per release. This file starts at 0.3.0; for 0.1.0 through
 
 ## 0.3.0
 
-Everything here is additive. No export was removed, no signature changed, and
-no behaviour a 0.2.1 consumer relied on is different — the diff against `v0.2.1`
-adds one entry point, one function and a more precise type, and nothing else.
+### Changed — the public API is now a decision rather than a leftover
+
+The main entry exported thirteen things, ten of which were internals that ended
+up there because something once needed them: `escapeText`, `findComponents`,
+`resolveComponentsDir`, `selectUsedComponents`, `createProcessor`,
+`buildModule` and three unified plugins, all sitting beside `compile`.
+
+It is now three functions, and the rest lives where it belongs:
+
+| Entry                    | Exports                                                                  |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `@skavex/skavex`         | `compile`, `render`, `slugify`                                           |
+| `@skavex/skavex/vite`    | `skavex`                                                                 |
+| `@skavex/skavex/browser` | the pipeline minus anything touching the filesystem                      |
+| `@skavex/skavex/plugins` | `rehypeHeadings`, `remarkExtractFrontmatter`, `rehypeEscapeSvelteBraces` |
+| `@skavex/skavex/utils`   | helpers for writing a plugin that injects a component                    |
+
+**This is breaking if you imported one of those ten from the main entry.** The
+fix is a different specifier, not different code — `/plugins` for the three
+plugins, `/browser` for `createProcessor` and `buildModule`. `escapeText`,
+`findComponents` and `resolveComponentsDir` are no longer public; open an issue
+if you were using one.
+
+Done now, deliberately, while `0.x` still permits it. The point of trimming
+before `1.0.0` is that a published export is a promise, and ten of them were
+never meant as promises. `test/api.test.js` now pins the surface entry by entry,
+so the next addition has to be written down before it ships.
 
 ### Added
 
@@ -31,6 +55,14 @@ adds one entry point, one function and a more precise type, and nothing else.
   that compiles and mounts what it renders, with an editable file tree of
   components and remark plugins.
 - **CONTRIBUTING.md**, stating where contributions actually happen.
+- **`.pre-commit-config.yaml`**, run both by the local hooks and by CI, so the
+  two cannot drift. Formatting, lint and a gitleaks scan on commit; typecheck
+  and unit tests on push. All tools come from the flake rather than `$PATH`, so
+  an editor and a terminal get the same versions.
+- **Third-party plugin coverage.** `test/plugins.test.js` runs the real
+  `remark-directive` and `rehype-external-links` against the pipeline, including
+  a directive turned into a Svelte component with prose braces still escaped
+  correctly around it.
 
 ### Changed
 
@@ -49,6 +81,11 @@ adds one entry point, one function and a more precise type, and nothing else.
 
 ### Fixed
 
+- **Prettier never checked a single `.svelte` file.** Without
+  `prettier-plugin-svelte` it does not recognise the extension, and
+  `prettier --check .` skips what it cannot parse instead of failing — so the
+  demo's largest component had never been formatted. The plugin is now
+  configured and the files are formatted.
 - `any` is banned repo-wide and 59 uses are gone; tests, benchmarks, e2e and
   scripts are typechecked for the first time, as are `.svelte` files.
 - Several casts that removed `null` rather than narrowing it — a missing

@@ -1,0 +1,23 @@
+# Secret scanning, for the pre-commit hook and for CI.
+#
+# The default ruleset, plus a list of paths that are not this repository's
+# content. Without it a scan reports pre-commit's own hook environments, which
+# vendor deliberately-fake AWS keys and private keys as fixtures for testing
+# their detectors — seven findings, none of them ours, which is how a scanner
+# gets ignored.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated, vendored or cached trees that nobody here writes"
+paths = [
+  '''(^|/)node_modules/''',
+  '''^\.pre-commit-cache/''',
+  '''^demo/dist/''',
+  '''^docs/book/''',
+  '''^types/''',
+  '''^coverage/''',
+  '''^test-results/''',
+  '''^playwright-report/''',
+  '''^pnpm-lock\.yaml$''',
+]

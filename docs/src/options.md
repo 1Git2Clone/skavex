@@ -31,12 +31,22 @@ rewrites formulas.
 
 ## Exports
 
-| Specifier                | Exports                                                                                                                                                                                                                                            |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@skavex/skavex`         | `compile`, `render`, `createProcessor`, `buildModule`, `slugify`, `escapeText`, `rehypeEscapeSvelteBraces`, `rehypeHeadings`, `remarkExtractFrontmatter`, `findComponents`, `selectUsedComponents`, `referencedComponents`, `resolveComponentsDir` |
-| `@skavex/skavex/vite`    | `skavex`                                                                                                                                                                                                                                           |
-| `@skavex/skavex/browser` | `render`, `createProcessor`, `buildModule`, `selectUsedComponents`, `referencedComponents`, `LAYOUT_IDENTIFIER` — everything above that does not touch the filesystem                                                                              |
-| `@skavex/skavex/utils`   | `componentNode`, `rawHtmlExpression`, `escapeTemplateLiteral`, `getBareLinkFromParagraph`                                                                                                                                                          |
+Five entry points, tiered by how close to the library's internals you need to
+get. Most projects use the first two and never the rest.
 
-`compile` and `findComponents` are the only things that read from disk, which
-is the whole difference between the main entry and `/browser`.
+| Specifier                | Exports                                                                                                         | For                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `@skavex/skavex/vite`    | `skavex`                                                                                                        | What a site configures.                    |
+| `@skavex/skavex`         | `compile`, `render`, `slugify`                                                                                  | Rendering a document outside a Vite build. |
+| `@skavex/skavex/browser` | `render`, `createProcessor`, `buildModule`, `selectUsedComponents`, `referencedComponents`, `LAYOUT_IDENTIFIER` | A live preview, a worker, an edge runtime. |
+| `@skavex/skavex/plugins` | `rehypeHeadings`, `remarkExtractFrontmatter`, `rehypeEscapeSvelteBraces`                                        | Assembling a pipeline by hand.             |
+| `@skavex/skavex/utils`   | `componentNode`, `rawHtmlExpression`, `escapeTemplateLiteral`, `getBareLinkFromParagraph`                       | Writing a plugin that injects a component. |
+
+`compile` is the only thing here that reads from disk, which is the whole
+difference between the main entry and `/browser`.
+
+If you assemble a pipeline from `/plugins` yourself, two orderings are not
+optional: `rehypeHeadings` runs **before** KaTeX, or ids come from KaTeX's
+markup instead of the prose, and `rehypeEscapeSvelteBraces` runs **last**, after
+everything that injects markup, or it escapes braces belonging to a component
+tag.

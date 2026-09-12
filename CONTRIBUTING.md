@@ -55,7 +55,13 @@ Everything comes from the flake, so the toolchain is the same one CI uses:
 ```sh
 nix develop          # node, pnpm, the Playwright browsers, fonts, mdbook
 pnpm install
+nix develop -c pre-commit install --install-hooks -t pre-commit -t pre-push
 ```
+
+The last line is worth running once per clone. `.pre-commit-config.yaml` is the
+same file CI runs, so anything it catches locally is something that would have
+failed the build — formatting, lint, a leaked credential on commit; typecheck
+and unit tests on push.
 
 Without Nix you will need Node 22.12 or newer and pnpm, plus Playwright's
 browsers and mdbook if you intend to run those parts.
@@ -72,8 +78,10 @@ browsers and mdbook if you intend to run those parts.
 | `pnpm demo`           | The playground, on a dev server                           |
 | `pnpm docs`           | The book, with live reload                                |
 
-CI runs `lint`, `check`, `test:coverage`, `test:e2e`, `bench:check`, the docs
-build and `nix flake check`. Running those six locally is the whole of it.
+CI runs the pre-commit hooks, then `check`, `test:coverage`, `test:e2e`,
+`bench:check`, the docs build and `nix flake check`. There is no separate lint
+step: prettier and eslint run as hooks, from the same file your commit hook
+uses, so the two lists cannot drift.
 
 ## What the checks expect
 

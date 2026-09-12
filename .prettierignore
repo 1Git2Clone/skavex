@@ -4,5 +4,6 @@ flake.lock
 types/
 demo/dist/
 docs/book/
+.pre-commit-cache/
 test-results/
 playwright-report/

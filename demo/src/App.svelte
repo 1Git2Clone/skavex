@@ -93,14 +93,20 @@
 				(stage === 'rehype' ? rehypePlugins : remarkPlugins).push(plugin);
 			}
 
-			const { html, metadata } = await render(workspace.source, { remarkPlugins, rehypePlugins });
+			const { html, metadata } = await render(workspace.source, {
+				remarkPlugins,
+				rehypePlugins
+			});
 
 			// The same rule the build-time pipeline uses, not a copy of it: a
 			// component is imported only if the document actually names it.
 			const usable = workspace.components.filter((file) => VALID_NAME.test(file.name));
 			const used = selectUsedComponents(
 				html,
-				usable.map((file) => ({ name: file.name, specifier: `./components/${file.name}.svelte` }))
+				usable.map((file) => ({
+					name: file.name,
+					specifier: `./components/${file.name}.svelte`
+				}))
 			);
 
 			// buildModule is exactly what the Vite plugin hands to the Svelte
@@ -166,7 +172,9 @@
 	});
 
 	const headings = $derived(output.metadata.headings ?? []);
-	const focusedComponent = $derived(components.find((file) => `components/${file.name}.svelte` === focused));
+	const focusedComponent = $derived(
+		components.find((file) => `components/${file.name}.svelte` === focused)
+	);
 	const focusedPlugin = $derived(plugins.find((file) => `plugins/${file.name}.js` === focused));
 
 	/**
@@ -219,8 +227,8 @@
 	<h1>skavex</h1>
 	<p>
 		Markdown&nbsp;+&nbsp;LaTeX&nbsp;+&nbsp;Svelte components. <em>This playground</em> ships the
-		pipeline <em>and</em> the Svelte compiler to your browser so it can rebuild as you type; a site built
-		with skavex ships neither.
+		pipeline <em>and</em> the Svelte compiler to your browser so it can rebuild as you type; a site
+		built with skavex ships neither.
 	</p>
 </header>
 
@@ -240,7 +248,11 @@
 
 		{#if treeOpen}
 			<nav class="tree">
-				<button class="file" class:active={focused === MARKDOWN} onclick={() => (focused = MARKDOWN)}>
+				<button
+					class="file"
+					class:active={focused === MARKDOWN}
+					onclick={() => (focused = MARKDOWN)}
+				>
 					{MARKDOWN}
 				</button>
 
@@ -253,7 +265,9 @@
 					<div class="row" class:active={focused === path}>
 						<button class="file" onclick={() => (focused = path)}>
 							{file.name}.svelte
-							{#if !output.used.includes(file.name)}<em title="Not referenced by the document">unused</em>{/if}
+							{#if !output.used.includes(file.name)}<em
+									title="Not referenced by the document">unused</em
+								>{/if}
 						</button>
 						<button
 							class="drop"
@@ -270,7 +284,8 @@
 				{#each plugins as file (file)}
 					{@const path = `plugins/${file.name}.js`}
 					<div class="row" class:active={focused === path}>
-						<button class="file" onclick={() => (focused = path)}>{file.name}.js</button>
+						<button class="file" onclick={() => (focused = path)}>{file.name}.js</button
+						>
 						<button
 							class="drop"
 							aria-label="Remove {file.name}.js"
@@ -288,7 +303,12 @@
 		{#if focusedComponent}
 			<div class="bar">
 				<label for="name">name</label>
-				<input id="name" class="name" spellcheck="false" bind:value={focusedComponent.name} />
+				<input
+					id="name"
+					class="name"
+					spellcheck="false"
+					bind:value={focusedComponent.name}
+				/>
 				<span class="hint">
 					{#if !VALID_NAME.test(focusedComponent.name)}
 						must start with a capital
@@ -302,19 +322,21 @@
 			<textarea
 				aria-label="Component source"
 				spellcheck="false"
-				bind:value={focusedComponent.source}
-			></textarea>
+				bind:value={focusedComponent.source}></textarea>
 		{:else if focusedPlugin}
 			<div class="bar">
 				<label for="name">name</label>
 				<input id="name" class="name" spellcheck="false" bind:value={focusedPlugin.name} />
 				<span class="hint">a unified plugin; every plugin here runs</span>
 			</div>
-			<textarea aria-label="Plugin source" spellcheck="false" bind:value={focusedPlugin.source}
-			></textarea>
+			<textarea
+				aria-label="Plugin source"
+				spellcheck="false"
+				bind:value={focusedPlugin.source}></textarea>
 		{:else}
 			<div class="bar"><label for="source">Markdown</label></div>
-			<textarea id="source" aria-label="Markdown" spellcheck="false" bind:value={source}></textarea>
+			<textarea id="source" aria-label="Markdown" spellcheck="false" bind:value={source}
+			></textarea>
 		{/if}
 	</section>
 

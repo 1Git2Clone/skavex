@@ -70,6 +70,65 @@ export function remarkReadingTime() {
 }
 ```
 
+## Giving markdown a syntax it does not have
+
+The pairing worth knowing about: a third-party plugin adds syntax, and skavex
+turns the result into a component. Neither half knows about the other.
+
+[`remark-directive`](https://github.com/remarkjs/remark-directive) adds
+`:::name` blocks, which markdown has no notion of:
+
+```markdown
+:::note
+Body text, still markdown.
+:::
+```
+
+A ten-line plugin turns those into a component:
+
+```js
+import remarkDirective from 'remark-directive';
+import { componentNode } from '@skavex/skavex/utils';
+import { visit } from 'unist-util-visit';
+
+function remarkCallout() {
+	return (tree) => {
+		visit(tree, (node, index, parent) => {
+			if (node.type !== 'containerDirective' || index === undefined || !parent) return;
+			parent.children[index] = componentNode('Callout', { type: node.name });
+		});
+	};
+}
+
+skavex({
+	components: '/src/lib/components/md',
+	remarkPlugins: [remarkDirective, remarkCallout]
+});
+```
+
+With `Callout.svelte` in the components directory, that is the whole of it —
+skavex sees `<Callout` in the output and emits the import.
+
+The brace escaping still applies around it. Prose containing `{braces}` beside
+an injected component compiles, because escaping runs after every plugin: it
+sees the tag and leaves it alone. `test/plugins.test.js` asserts exactly that,
+against the real `remark-directive`.
+
+## Plugins that work unmodified
+
+Anything targeting unified 11. Verified in this repository's test suite rather
+than assumed:
+
+- [`remark-directive`](https://github.com/remarkjs/remark-directive) — the
+  recipe above.
+- [`rehype-external-links`](https://github.com/rehypejs/rehype-external-links) —
+  `rehypePlugins: [[rehypeExternalLinks, { target: '_blank', rel: ['noopener'] }]]`,
+  which rewrites external anchors and leaves internal ones alone.
+
+This is the part mdsvex cannot match, and it is the same constraint as the
+maths: mdsvex pins unified 8, so a plugin written against 11 either fails or,
+worse, does nothing.
+
 ## Trying one
 
 The [playground](https://pages.hu-tao.dev/skavex/skavex/) has an editable

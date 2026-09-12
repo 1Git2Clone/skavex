@@ -15,6 +15,10 @@ export default [
 			// mdbook's rendered output: vendored highlight.js and its own theme
 			// scripts, none of it written here.
 			'docs/book/**',
+			// pre-commit's hook environments, which include a vendored pip and so
+			// a good deal of JavaScript nobody here wrote. Lands in the working
+			// tree rather than under HOME because CI's runner has no writable one.
+			'.pre-commit-cache/**',
 			'coverage/**'
 		]
 	},
