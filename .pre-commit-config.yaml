@@ -85,6 +85,25 @@ repos:
         pass_filenames: false
         stages: [pre-push]
 
+      # Scoped to renovate.json5 and on pre-push, so it costs nothing until
+      # someone edits that file — Renovate is a large closure and lives in its
+      # own dev shell for that reason. Deliberately NOT on the commit stage:
+      # CI's `pre-commit run --all-files` runs the commit stage, and would
+      # download Renovate on every push for a file that changes twice a year.
+      #
+      # Worth gating at all because the failure is silent: a misspelled key
+      # does not error, it is ignored, and the rule it belonged to quietly
+      # stops applying. `matchPackageNamez` validates as "a rule with no
+      # selector" — which is how the @playwright/test pin would come back to
+      # life without anyone noticing.
+      - id: renovate-config
+        name: renovate-config-validator
+        entry: nix develop .#renovate -c renovate-config-validator
+        language: system
+        files: ^renovate\.json5$
+        pass_filenames: false
+        stages: [pre-push]
+
       - id: unit-tests
         name: unit tests
         entry: nix develop -c pnpm test
