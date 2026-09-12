@@ -69,6 +69,43 @@ async function setSource(page, value) {
 	}, value);
 }
 
+/**
+ * Describe where an element actually is, and what is containing it.
+ *
+ * Playwright reports "element is not visible" for a zero box, a
+ * `visibility: hidden` ancestor and an element clipped out of an
+ * `overflow: hidden` parent alike. On a machine that reproduces none of it,
+ * that message is not enough to act on — this prints the chain that decides it.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} selector The element to describe.
+ * @returns {Promise<string>} A line per ancestor, plus the viewport.
+ */
+async function describeGeometry(page, selector) {
+	return page.evaluate((target) => {
+		const element = globalThis.document.querySelector(target);
+		if (!element) return `${target}: not in the DOM at all`;
+
+		const lines = [`viewport ${globalThis.innerWidth}x${globalThis.innerHeight}`];
+		for (
+			let node = element;
+			node && node !== globalThis.document.documentElement;
+			node = node.parentElement
+		) {
+			const box = node.getBoundingClientRect();
+			const styles = globalThis.getComputedStyle(node);
+			const name =
+				node.tagName.toLowerCase() +
+				(node.className ? `.${String(node.className).split(' ').join('.')}` : '');
+			lines.push(
+				`${name} y=${Math.round(box.y)} h=${Math.round(box.height)} w=${Math.round(box.width)} ` +
+					`overflow=${styles.overflow} visibility=${styles.visibility} display=${styles.display}`
+			);
+		}
+		return lines.join('\n');
+	}, selector);
+}
+
 test.beforeEach(async ({ page }) => {
 	await page.goto('/');
 	await expect(page.locator('.prose .katex')).not.toHaveCount(0);
@@ -153,7 +190,21 @@ test('adds a component, compiles it into the document, and removes it', async ({
 	const assertClean = watchForFailures(page);
 	await page.getByRole('button', { name: 'Expand file tree' }).click();
 
-	await page.getByTitle('Add a component').click();
+	// The aside animates its width, so the tree's contents are in the DOM before
+	// they have settled anywhere. Waiting on the button rather than clicking
+	// straight into the transition is a real precondition, not a sleep.
+	const add = page.getByTitle('Add a component');
+	try {
+		await expect(add).toBeVisible();
+		await add.click();
+	} catch (error) {
+		throw new Error(
+			`${error instanceof Error ? error.message : String(error)}\n` +
+				`--- where the button actually was ---\n${await describeGeometry(page, '.tree .add')}`,
+			{ cause: error }
+		);
+	}
+
 	await expect(page.getByLabel('Component source')).toBeVisible();
 
 	// A new component is inert until the document names it — the same rule the
