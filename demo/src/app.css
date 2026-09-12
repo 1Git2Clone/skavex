@@ -125,7 +125,14 @@ main {
 	background: var(--bg);
 }
 
+/* One height for all three, whatever each happens to contain. Left to their
+   contents they disagree across a single row of panes: the file tree's bar
+   holds a hamburger (34px), the editor's a text label (36px), and the
+   preview's a row of buttons (44px) — which wrapped to 65px once the pane got
+   narrow enough to break "Svelte source" across two lines. */
 .bar {
+	min-height: 2.75rem;
+	flex-wrap: nowrap;
 	display: flex;
 	align-items: center;
 	gap: 0.25rem;
@@ -134,6 +141,14 @@ main {
 	background: var(--panel);
 	color: var(--dim);
 	font-size: 0.85rem;
+}
+
+/* Tab labels are two words; letting them wrap is what made the preview's bar
+   grow a second line rather than stay a toolbar. */
+.bar button,
+.bar label,
+.timing {
+	white-space: nowrap;
 }
 
 .bar button {
@@ -151,8 +166,29 @@ main {
 	color: var(--text);
 }
 
+.tabs {
+	display: flex;
+	gap: 0.25rem;
+	/* min-width: 0 is what lets this shrink at all — a flex item's default
+	   min-width is its content, so without it the group refuses to give way and
+	   pushes the timing out through the bar's own padding. Scrolls rather than
+	   wraps, because a toolbar that grows a second row moves everything under
+	   it. */
+	min-width: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+	display: none;
+}
+
 .timing {
 	margin-left: auto;
+	/* Never the thing that gives way: it is four characters and a unit, and a
+	   truncated measurement is worse than none. */
+	flex: none;
+	padding-left: 0.5rem;
 	font-variant-numeric: tabular-nums;
 }
 
