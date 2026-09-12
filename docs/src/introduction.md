@@ -26,11 +26,12 @@ pipeline, so the unified version is yours to choose.
 
 ## What it is not
 
-**It is not fast.** On the benchmark corpus it is 20–50% _slower_ than the same
-pipeline wired by hand, because it does more: it collects headings, renders
-their maths for a table of contents, and escapes prose without touching
-component tags. Against mdsvex it is a tie. The numbers, and the method that
-produced them, are in [Benchmarks](benchmarks.md).
+**It is not a speed play.** Against the only mdsvex configuration that renders
+maths it is a tie — this run has skavex ahead at 116 documents a second to 107,
+and the two trade places within about 15% across runs. It costs about 1.26× a
+hand-rolled unified 11 pipeline that does none of the work below and whose
+output does not compile. Pick it for what it does, not for throughput. The
+numbers, and the method that produced them, are in [Benchmarks](benchmarks.md).
 
 **It is not a fork of mdsvex, and mdsvex is not broken.** Given the right
 plugin versions mdsvex renders KaTeX correctly, handles indented component

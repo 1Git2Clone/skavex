@@ -61,20 +61,31 @@ into.
 20 documents of blog-post length — prose, inline and display maths, a table
 whose cells contain maths, code, headings — median of 7 samples.
 
-| Engine                 | Per doc  | Throughput | KaTeX    | MathML   | Heading ids | Escapes prose | Keeps components | Compiles |
-| ---------------------- | -------- | ---------- | -------- | -------- | ----------- | ------------- | ---------------- | -------- |
-| skavex                 | 8.96 ms  | 111/s      | yes (46) | yes (16) | yes (3)     | yes           | yes              | yes      |
-| mdsvex + remark-math 3 | 10.31 ms | 97/s       | yes (46) | yes (15) | no          | no            | yes              | **no**   |
-| mdsvex + remark-math 6 | 3.37 ms  | 297/s      | **no**   | **no**   | no          | no            | yes              | **no**   |
+| Engine                 | Per doc | Throughput | KaTeX    | MathML   | Heading ids | Escapes prose | Keeps components | Compiles |
+| ---------------------- | ------- | ---------- | -------- | -------- | ----------- | ------------- | ---------------- | -------- |
+| skavex                 | 8.62 ms | 116/s      | yes (46) | yes (16) | yes (3)     | yes           | yes              | yes      |
+| hand-rolled unified 11 | 6.83 ms | 146/s      | yes (46) | yes (15) | no          | no            | yes              | **no**   |
+| mdsvex + remark-math 3 | 9.31 ms | 107/s      | yes (46) | yes (15) | no          | no            | yes              | **no**   |
+| mdsvex + remark-math 6 | 3.10 ms | 323/s      | **no**   | **no**   | no          | no            | yes              | **no**   |
+
+Run with `pnpm bench:isolated`, which pins the process to dedicated cores; see
+[Making the numbers reproducible](#making-the-numbers-reproducible).
 
 ### Reading this honestly
 
-**Throughput is a tie.** Across repeated runs skavex came out between 1.01×
-and 1.15× the working mdsvex configuration. That is noise on a warm machine,
-and nobody should pick a markdown engine on it. The benchmark exists to prove
-skavex is _not slower_, not to claim it is faster.
+**Against mdsvex, throughput is a tie.** This run has skavex ahead, 116/s to
+107/s. Across repeated runs the two trade places within about 15%, which is
+noise on a warm machine, and nobody should pick a markdown engine on it. What
+the benchmark is for is proving that everything in the capability columns costs
+nothing in speed.
 
-**`mdsvex + remark-math 6` is not fast, it is empty.** Its 3.37 ms is the cost
+**The hand-rolled row is a floor, not a competitor.** It is the same unified 11
+pipeline with the heading collection, the table-of-contents rendering and the
+brace escaping removed — and its output does not compile, which is the column
+that matters. skavex costs 1.26× that floor, and the four `no`s beside it are
+what the difference buys.
+
+**`mdsvex + remark-math 6` is not fast, it is empty.** Its 3.10 ms is the cost
 of skipping every formula. The KaTeX column is the same measurement expressed
 as a capability: 46 rendered formulas against 0.
 

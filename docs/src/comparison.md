@@ -57,16 +57,20 @@ is the version trap above, not a separate limitation.
 
 ## Speed
 
-skavex is **not faster**. Per document, on the benchmark corpus:
+Per document, on the benchmark corpus:
 
-| skavex  | hand-rolled unified 11 | mdsvex + math 3 | mdsvex + math 6 |
-| ------- | ---------------------- | --------------- | --------------- |
-| 8.41 ms | **7.18 ms**            | 9.37 ms         | 2.98 ms         |
+| skavex      | hand-rolled unified 11 | mdsvex + math 3 | mdsvex + math 6 |
+| ----------- | ---------------------- | --------------- | --------------- |
+| **8.62 ms** | 6.83 ms                | 9.31 ms         | 3.10 ms         |
 
-Against mdsvex it is a tie. Against the same pipeline wired by hand it is 20–50%
-slower, because it collects headings, renders their maths, and escapes prose
-while leaving component tags alone. The `remark-math 6` column is fast because
-it is doing nothing.
+**Against mdsvex it is a tie**, with this run a little in skavex's favour; the
+two trade places within about 15% across runs. Choosing between them on
+throughput would be choosing on noise.
+
+The hand-rolled column is a floor rather than a competitor — the same unified
+11 pipeline without the heading collection, the rendered table of contents or
+the brace escaping, and its output does not compile. The 1.26× is what that
+work costs. The `remark-math 6` column is fast because it is doing nothing.
 
 [Benchmarks](benchmarks.md) has the method, the hardware controls, and how to
 reproduce it.

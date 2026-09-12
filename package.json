@@ -20,7 +20,12 @@
 		"type": "git",
 		"url": "https://git.hu-tao.dev/skavex/skavex.git"
 	},
+	"bugs": {
+		"url": "https://git.hu-tao.dev/skavex/skavex/issues"
+	},
+	"homepage": "https://pages.hu-tao.dev/skavex/skavex/docs/",
 	"type": "module",
+	"sideEffects": false,
 	"files": [
 		"src",
 		"types",

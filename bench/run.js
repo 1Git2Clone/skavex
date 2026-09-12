@@ -30,16 +30,16 @@ const SAMPLES = 7;
  * deterministic and therefore safe to gate on exactly.
  */
 const GUARANTEES = {
-	// skavex is not fast, and nothing here pretends it is. It sits at parity
-	// with working mdsvex, so the floor catches a change that makes it
-	// materially slower than the alternative rather than defending a lead it
-	// does not have.
+	// skavex and a working mdsvex sit at parity, trading places within about 15%
+	// run to run. The floor is set below that band on purpose: it is here to
+	// catch a change that makes skavex materially slower than the alternative,
+	// not to defend a lead that is inside the noise either way.
 	minSpeedRatioVsWorkingMdsvex: 0.9,
 
-	// And it is SLOWER than the bare pipeline by design — it collects headings,
-	// renders maths for a table of contents and escapes prose, none of which the
-	// bare one does. This is the number worth watching: it is the price of those
-	// features, and it should not quietly creep up.
+	// The bare pipeline is a floor rather than a rival: it collects no headings,
+	// renders no table of contents, escapes no prose, and its output does not
+	// compile. skavex costs more than it by design, and this is the number worth
+	// watching — the price of those features, which should not quietly creep up.
 	//
 	// Measured across five runs at 1.17x to 1.47x, so the ceiling clears the top
 	// of that range rather than sitting on it. A gate that a clean checkout
