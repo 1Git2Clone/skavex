@@ -1,0 +1,5 @@
+node_modules/
+result
+test/.tmp/
+coverage/
+*.tgz

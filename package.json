@@ -1,0 +1,77 @@
+{
+	"name": "@skavex/skavex",
+	"version": "0.1.0",
+	"description": "Server-rendered Markdown + LaTeX for Svelte. A Vite plugin that compiles .md into real Svelte components.",
+	"keywords": [
+		"svelte",
+		"sveltekit",
+		"markdown",
+		"latex",
+		"katex",
+		"vite-plugin",
+		"unified",
+		"remark",
+		"rehype",
+		"ssr"
+	],
+	"license": "MIT",
+	"author": "Ivan Kirilov <ivan@hu-tao.dev>",
+	"repository": {
+		"type": "git",
+		"url": "https://git.hu-tao.dev/skavex/skavex.git"
+	},
+	"type": "module",
+	"files": [
+		"src",
+		"README.md",
+		"LICENSE"
+	],
+	"exports": {
+		".": "./src/index.js",
+		"./vite": "./src/vite.js",
+		"./utils": "./src/utils.js"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": "^20.19.0 || >=22.12.0"
+	},
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write ."
+	},
+	"dependencies": {
+		"rehype-katex": "^7.0.1",
+		"rehype-stringify": "^10.0.1",
+		"remark-frontmatter": "^5.0.0",
+		"remark-gfm": "^4.0.1",
+		"remark-math": "^6.0.0",
+		"remark-parse": "^11.0.0",
+		"remark-rehype": "^11.1.2",
+		"unified": "^11.0.5",
+		"unist-util-visit": "^5.0.0",
+		"yaml": "^2.8.1"
+	},
+	"peerDependencies": {
+		"svelte": "^5.0.0",
+		"vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
+	},
+	"peerDependenciesMeta": {
+		"vite": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"eslint": "^10.10.0",
+		"eslint-config-prettier": "^10.1.8",
+		"globals": "^17.12.0",
+		"prettier": "^3.9.6",
+		"svelte": "^5.57.0",
+		"typescript": "^6.0.3",
+		"vitest": "^4.0.18"
+	}
+}
