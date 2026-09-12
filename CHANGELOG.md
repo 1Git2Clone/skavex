@@ -59,6 +59,12 @@ so the next addition has to be written down before it ships.
   two cannot drift. Formatting, lint and a gitleaks scan on commit; typecheck
   and unit tests on push. All tools come from the flake rather than `$PATH`, so
   an editor and a terminal get the same versions.
+- **`renovate.json5` is validated**, by `renovate-config-validator` from a
+  dedicated dev shell and a pre-push hook scoped to that file. The failure it
+  guards against is silent: Renovate ignores a misspelled key rather than
+  erroring, so a rule quietly stops applying — `matchPackageNamez` validates as
+  "a rule with no selector", which is how the `@playwright/test` pin would come
+  back to life unnoticed.
 - **Third-party plugin coverage.** `test/plugins.test.js` runs the real
   `remark-directive` and `rehype-external-links` against the pipeline, including
   a directive turned into a Svelte component with prose braces still escaped

@@ -63,6 +63,22 @@
             FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
           };
         };
+
+        # Renovate, for `renovate-config-validator` alone.
+        #
+        # Its own shell rather than an entry in `default`, for the reason
+        # hutao/vps splits it the same way: Renovate is a large node
+        # application, and putting it in the shell every CI run enters would
+        # download that closure on every push for a validator that only matters
+        # when renovate.json5 changes. The pre-push hook that uses it is scoped
+        # to that file, so the cost falls on whoever edits it.
+        #
+        #   nix develop .#renovate -c renovate-config-validator
+        #
+        # The bot itself runs from hutao/vps, which is where the schedule, the
+        # token and the autodiscover settings live; this repo only carries its
+        # own repository config.
+        renovate = pkgs.mkShell { packages = [ pkgs.renovate ]; };
       });
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt);

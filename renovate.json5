@@ -15,6 +15,11 @@
 // .json5 rather than .json so each rule can carry the reason it exists.
 // Renovate's validator rejects unknown keys, so a "_comment" field in JSON
 // fails the run rather than documenting it.
+//
+// Checked with `nix develop .#renovate -c renovate-config-validator`, which a
+// pre-push hook runs whenever this file is in the push. Worth gating because
+// the failure mode is silence: a misspelled key is ignored rather than
+// reported, and the rule it belonged to simply stops applying.
 {
 	$schema: 'https://docs.renovatebot.com/renovate-schema.json',
 	extends: ['config:recommended'],
