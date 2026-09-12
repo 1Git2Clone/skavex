@@ -13,6 +13,28 @@
 # Forgejo's registry is append-only per version too, so re-running this for a
 # version that already exists fails. That is intended rather than a problem:
 # the tag is the identity, and a tag that has been published is done.
+#
+# ── The token ─────────────────────────────────────────────────────────────────
+# PACKAGES_TOKEN, and the name is not a preference. Forgejo reserves the
+# GITHUB_, FORGEJO_, GITEA_ and GITLAB_ prefixes for secret names — a secret
+# cannot be created under any of them — so the automatic repository token
+# a GitHub workflow would reach for is not addressable here at all.
+# Same reason hutao/vps names its Renovate secret RENOVATE_TOKEN.
+#
+# Create it once, by hand, exactly like the Renovate one:
+#
+#   1. As the account that should own the uploads — a bot account rather than a
+#      person, so `published by` in the package list is not someone's name:
+#      /user/settings/applications -> Generate New Token, with WRITE on
+#      `package`. Nothing else is needed; this workflow only uploads.
+#   2. Paste it at
+#      git.hu-tao.dev/skavex/skavex/settings/actions/secrets as PACKAGES_TOKEN.
+#   3. Give that account write on the skavex org, or the upload is refused for
+#      an owner it cannot publish under.
+#
+# The account owning the token decides nothing about WHERE the package lands —
+# that is `github.repository_owner` in the registry URL below — only whether it
+# is allowed to.
 name: Publish
 
 on:
@@ -44,6 +66,23 @@ jobs:
           git fetch -q --tags origin "$GITHUB_SHA"
           git checkout -q --detach "$GITHUB_SHA"
 
+      # Before anything is built or uploaded, because a missing token is a
+      # configuration mistake and should not look like a publish failure three
+      # minutes later.
+      - name: Check the token is set
+        env:
+          # Through the environment rather than interpolated into the script:
+          # `${{ secrets.X }}` in a `run:` block is substituted into the shell
+          # source before it executes, which puts the value in the rendered
+          # script. Reading it from the environment keeps it out.
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+        run: |
+          if [ -z "$PACKAGES_TOKEN" ]; then
+            echo "PACKAGES_TOKEN is not set on this repository." >&2
+            echo "See the header of .forgejo/workflows/publish.yml for how to create it." >&2
+            exit 1
+          fi
+
       - name: Install
         run: nix develop -c pnpm install --frozen-lockfile
 
@@ -62,19 +101,20 @@ jobs:
 
       - name: Publish
         env:
-          # Provided by the runner for this repository. It needs package write
-          # on the owner; a 401 or 403 here is what the absence looks like.
-          FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
         run: |
           registry="${{ github.server_url }}/api/packages/${{ github.repository_owner }}/npm/"
 
           # Written outside the working tree on purpose. A config holding a live
           # token inside the checkout is one `git add -A` away from a commit,
           # and the workspace is not a place to leave one lying around.
+          #
+          # ${PACKAGES_TOKEN} is left for npm to expand from the environment
+          # rather than interpolated here, so the value never reaches the file.
           config="$(mktemp -d)/npm-auth"
           {
             printf 'registry=%s\n' "$registry"
-            printf '%s:_authToken=${FORGEJO_TOKEN}\n' "${registry#https:}"
+            printf '%s:_authToken=${PACKAGES_TOKEN}\n' "${registry#https:}"
           } > "$config"
 
           # --no-git-checks: the checkout above is a detached HEAD, which pnpm
