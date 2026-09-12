@@ -124,10 +124,14 @@ jobs:
             printf '%s:_authToken=${PACKAGES_TOKEN}\n' "${registry#https:}"
           } > "$config"
 
+          # NPM_CONFIG_USERCONFIG rather than `--userconfig`: that flag is
+          # npm's, and `pnpm publish` rejects it outright. pnpm reads npm's
+          # configuration from the environment, and expands ${VAR} inside the
+          # file it points at, which is what keeps the token out of the file.
+          #
           # --no-git-checks: the checkout above is a detached HEAD, which pnpm
           # otherwise refuses to publish from.
-          nix develop -c pnpm publish \
+          NPM_CONFIG_USERCONFIG="$config" nix develop -c pnpm publish \
             --registry "$registry" \
-            --userconfig "$config" \
             --no-git-checks \
             --access public
