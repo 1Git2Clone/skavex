@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { compile as compileSvelte } from 'svelte/compiler';
 import { compile, render } from '../src/index.js';
 import { referencedComponents } from '../src/browser.js';
-import { rehypeHeadings } from '../src/plugins.js';
 
 /**
  * Adversarial markdown, one payload at a time.
@@ -20,23 +19,6 @@ import { rehypeHeadings } from '../src/plugins.js';
  *
  * @module
  */
-
-const HEADINGS = { rehypePlugins: [rehypeHeadings] };
-
-/**
- * Render, and fail loudly if the headings plugin produced nothing.
- *
- * @param {string} source Markdown to render.
- * @returns {Promise<{html: string, headings: import('../src/headings.js').HeadingEntry[]}>}
- */
-async function headingsOf(source) {
-	const { html, metadata } = await render(source, HEADINGS);
-	if (!metadata.headings) throw new Error('no headings were collected');
-	return {
-		html,
-		headings: /** @type {import('../src/headings.js').HeadingEntry[]} */ (metadata.headings)
-	};
-}
 
 /**
  * Compile a document and assert the Svelte compiler accepts the result.
@@ -107,88 +89,6 @@ describe('markup that only looks like a component', () => {
 
 		expect(referencedComponents(html)).toEqual(['Badge']);
 		expect(html.match(/<Badge \/>/g)).toHaveLength(3);
-	});
-});
-
-describe('heading ids under collision', () => {
-	it('does not hand two headings the same id', async () => {
-		// A reference page with "Examples" under every section is an ordinary
-		// document, and duplicate ids are invalid HTML: every link to the second
-		// one lands on the first, silently and forever.
-		const { html, headings } = await headingsOf('## Setup\n\ntext\n\n## Setup\n');
-
-		expect(headings.map((h) => h.id)).toEqual(['setup', 'setup-1']);
-		expect(html).toContain('id="setup"');
-		expect(html).toContain('id="setup-1"');
-	});
-
-	it('counts headings that differ only in case or punctuation as collisions', async () => {
-		// They collide because slugify erases the difference, so the check has to
-		// happen on the slug rather than on the text.
-		const { headings } = await headingsOf('## Setup\n\n## setup\n\n## SET UP!\n');
-
-		expect(headings.map((h) => h.id)).toEqual(['setup', 'setup-1', 'set-up']);
-	});
-
-	it('gives an id to a heading whose text slugifies to nothing', async () => {
-		// An emoji title, a rule-shaped heading, a heading that is only maths. An
-		// empty id attribute is invalid, and a table of contents built from one
-		// has an href of "#", which goes nowhere.
-		const { headings } = await headingsOf('## 🎉\n\n## ---\n\n## ???\n');
-
-		expect(headings.map((h) => h.id)).toEqual(['heading', 'heading-1', 'heading-2']);
-		expect(headings.every((h) => h.id !== '')).toBe(true);
-	});
-
-	it('never renames an id an author wrote, and moves a collision out of its way', async () => {
-		// A written id may already be linked from somewhere skavex cannot see, so
-		// it is the one thing here that is not negotiable. The generated id yields.
-		/** @returns {(tree: import('hast').Root) => void} */
-		const claimTheSlug = () => (tree) => {
-			const second = /** @type {import('hast').Element} */ (
-				tree.children.filter((n) => n.type === 'element')[1]
-			);
-			second.properties.id = 'setup';
-		};
-
-		const { metadata } = await render('## Setup\n\n## Other\n', {
-			rehypePlugins: [claimTheSlug, rehypeHeadings]
-		});
-		const headings = /** @type {import('../src/headings.js').HeadingEntry[]} */ (
-			metadata.headings
-		);
-
-		expect(headings.map((h) => h.id)).toEqual(['setup-1', 'setup']);
-	});
-
-	it('starts the numbering again for the next document', async () => {
-		// The counter is per document. Shared across a build, a post's anchors
-		// would depend on how many files were rendered before it — reproducible
-		// only by chance, and different on every incremental rebuild.
-		const first = await headingsOf('## Setup\n\n## Setup\n');
-		const second = await headingsOf('## Setup\n\n## Setup\n');
-
-		expect(second.headings.map((h) => h.id)).toEqual(first.headings.map((h) => h.id));
-	});
-
-	it('collects a setext heading like any other', async () => {
-		const { headings } = await headingsOf('Title\n=====\n');
-
-		expect(headings).toEqual([{ id: 'title', level: 1, text: 'Title', html: 'Title' }]);
-	});
-
-	it('drops component markup from a heading without losing the prose around it', async () => {
-		// The entry is a string for navigation to display, so a component in a
-		// heading cannot survive into it — but the words on either side must, and
-		// the id must come from them rather than from the tag.
-		const { html, headings } = await headingsOf('## Title <Badge /> here\n');
-
-		expect(headings[0].id).toBe('title-here');
-		expect(headings[0].html).not.toContain('Badge');
-		expect(headings[0].html).toContain('Title');
-		expect(headings[0].html).toContain('here');
-		// The component itself still belongs to the document.
-		expect(html).toContain('<Badge />');
 	});
 });
 

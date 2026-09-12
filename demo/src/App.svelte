@@ -6,7 +6,6 @@
 		selectUsedComponents,
 		referencedComponents
 	} from '@skavex/skavex/browser';
-	import { rehypeHeadings } from '@skavex/skavex/plugins';
 	import { buildComponent, loadPlugin } from './build.js';
 	import {
 		DOCUMENT,
@@ -86,10 +85,8 @@
 		try {
 			/** @type {import('unified').PluggableList} */
 			const remarkPlugins = [];
-			// Opt-in, like any other plugin: skavex collects no metadata on its
-			// own. The table of contents on the right is what this one contributes.
 			/** @type {import('unified').PluggableList} */
-			const rehypePlugins = [rehypeHeadings];
+			const rehypePlugins = [];
 
 			for (const file of workspace.plugins) {
 				const { plugin, stage } = await loadPlugin(file);
@@ -174,8 +171,11 @@
 		return () => style.remove();
 	});
 
+	// Contributed by the `contents` plugin in the file tree, not by skavex —
+	// which is why the shape is named here, by the thing consuming it, rather
+	// than by the library. Delete that plugin and this list empties.
 	const headings = $derived(
-		/** @type {import('@skavex/skavex/plugins').HeadingEntry[]} */ (
+		/** @type {{id: string, level: number, text: string, html: string}[]} */ (
 			output.metadata.headings ?? []
 		)
 	);

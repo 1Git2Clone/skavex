@@ -38,16 +38,21 @@ get. Most projects use the first two and never the rest.
 | Specifier                | Exports                                                                                                         | For                                                             |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | `@skavex/skavex/vite`    | `skavex`                                                                                                        | What a site configures.                                         |
-| `@skavex/skavex`         | `compile`, `render`, `slugify`                                                                                  | Rendering a document outside a Vite build.                      |
+| `@skavex/skavex`         | `compile`, `render`                                                                                             | Rendering a document outside a Vite build.                      |
 | `@skavex/skavex/browser` | `render`, `createProcessor`, `buildModule`, `selectUsedComponents`, `referencedComponents`, `LAYOUT_IDENTIFIER` | A live preview, a worker, an edge runtime.                      |
-| `@skavex/skavex/plugins` | `rehypeHeadings`, `remarkExtractFrontmatter`, `rehypeEscapeSvelteBraces`                                        | Assembling a pipeline by hand.                                  |
+| `@skavex/skavex/plugins` | `remarkExtractFrontmatter`, `rehypeEscapeSvelteBraces`                                                          | Assembling a pipeline by hand.                                  |
 | `@skavex/skavex/utils`   | `setMetadata`, `componentNode`, `rawHtmlExpression`, `escapeTemplateLiteral`, `getBareLinkFromParagraph`        | Writing a plugin: contributing metadata, injecting a component. |
 
 `compile` is the only thing here that reads from disk, which is the whole
 difference between the main entry and `/browser`.
 
-If you assemble a pipeline from `/plugins` yourself, two orderings are not
-optional: `rehypeHeadings` runs **before** KaTeX, or ids come from KaTeX's
-markup instead of the prose, and `rehypeEscapeSvelteBraces` runs **last**, after
+`/plugins` holds the two the pipeline cannot do without, and nothing else.
+Heading ids, a table of contents, syntax highlighting and everything else a
+document tree can be asked for are remark and rehype plugins; the ecosystem has
+them, and being on unified 11 is what lets you use them unmodified.
+
+If you assemble a pipeline yourself, two orderings are not optional: anything
+reading an element's text runs **before** KaTeX, or it reads KaTeX's markup
+instead of the prose, and `rehypeEscapeSvelteBraces` runs **last**, after
 everything that injects markup, or it escapes braces belonging to a component
 tag.

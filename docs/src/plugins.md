@@ -76,10 +76,9 @@ It merges rather than assigns, which matters because a plugin does not know
 what ran before it. `file.data.fm = {...}` is the same operation minus that
 guarantee, and discards the author's frontmatter whenever it runs second.
 
-This is how every metadata key gets there, skavex's own bundled plugin
-included — `rehypeHeadings` is thirty lines around one `setMetadata` call, and
-a plugin you write has exactly the same standing. Later writers win, so
-ordering decides who owns a contested key.
+This is how every metadata key gets there. skavex writes exactly one of its
+own — the document's frontmatter — and a plugin you write has the same standing
+as that. Later writers win, so ordering decides who owns a contested key.
 
 ## Giving markdown a syntax it does not have
 

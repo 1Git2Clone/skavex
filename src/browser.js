@@ -58,28 +58,26 @@ import { rehypeEscapeSvelteBraces } from './escape.js';
  * @property {import('unified').PluggableList} [rehypePlugins]
  *                                      Run on the HTML tree BEFORE KaTeX, so a plugin reading
  *                                      element text sees the prose rather than KaTeX's markup.
- *                                      Where `rehypeHeadings` and anything else deriving
- *                                      metadata from the document belongs.
+ *                                      Where `rehype-slug`, a table-of-contents collector and
+ *                                      anything else derived from the document belongs.
  */
 
 /**
  * A document's metadata: its frontmatter, plus whatever plugins contributed.
  *
- * Deliberately open and deliberately unopinionated. skavex names no key of its
- * own here — a document tree can be asked for a table of contents, a reading
- * time, its outbound links, the languages of its code blocks, a word count, and
- * skavex has no business deciding which of those every project wants. Plugins
- * merge in what a project actually needs, through
- * {@link import('./utils.js').setMetadata}, and all of it is exported as the
- * document's `metadata`.
+ * Deliberately open and deliberately unopinionated. skavex writes nothing here
+ * but the document's own frontmatter — a document tree can be asked for a table
+ * of contents, a reading time, its outbound links, the languages of its code
+ * blocks, a word count, and none of that is skavex's to decide or to implement.
+ * Remark and rehype exist for it. Plugins merge in what a project actually
+ * needs, through {@link import('./utils.js').setMetadata}, and all of it is
+ * exported as the document's `metadata`.
  *
  * The consequence is that values arrive typed `unknown`, because only the
  * project knows what its own pipeline produces. Narrow it where you consume it:
  *
  * ```ts
- * import type { HeadingEntry } from '@skavex/skavex/plugins';
- *
- * const headings = metadata.headings as HeadingEntry[] | undefined;
+ * const headings = metadata.headings as TocEntry[] | undefined;
  * ```
  *
  * @typedef {Record<string, unknown>} DocumentMetadata
@@ -108,6 +106,10 @@ let warnedAboutHeadings = false;
  * a long way from the cause. TypeScript callers get an excess-property error for
  * free; this is for everyone else.
  *
+ * The replacement is not another skavex option. Heading ids are `rehype-slug`,
+ * a table of contents is a plugin over the same tree, and both are ordinary
+ * rehype plugins that belong in `rehypePlugins`.
+ *
  * Once per process rather than once per document, because a site has hundreds
  * and the second line of it teaches nobody anything. Remove in 0.5.0.
  *
@@ -120,9 +122,10 @@ function warnAboutRemovedHeadingsOption(options) {
 
 	console.warn(
 		'[skavex] The `headings` option was removed in 0.4.0 and is being ignored. ' +
-			'Headings are collected by a plugin now:\n' +
-			"  import { rehypeHeadings } from '@skavex/skavex/plugins';\n" +
-			'  skavex({ rehypePlugins: [rehypeHeadings] })'
+			'Heading ids and a table of contents are rehype plugins, not skavex ' +
+			'features:\n' +
+			"  import rehypeSlug from 'rehype-slug';\n" +
+			'  skavex({ rehypePlugins: [rehypeSlug] })'
 	);
 }
 

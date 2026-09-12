@@ -5,86 +5,84 @@ Notable changes per release. This file starts at 0.3.0; for 0.1.0 through
 
 ## 0.4.0
 
-### Changed — metadata is generic, and `headings` is no longer special
+### Removed — headings, tables of contents, and the metadata shape
 
-skavex had one option, `headings`, that collected a table of contents onto
+skavex had a `headings` option that collected a table of contents onto
 `metadata.headings`, on by default, with a field spelled out in
-`DocumentMetadata` for it. Nothing else the document tree can produce got that
-treatment — not a reading time, not the outbound links, not the languages of
-the code blocks, not a word count — which made the core of the library carry one
-project's requirement as if it were everybody's.
+`DocumentMetadata` for it and a hand-written slugger behind it. Nothing else a
+document tree can produce got that treatment — not a reading time, not the
+outbound links, not the languages of the code blocks, not a word count, not the
+footnotes. It was one project's navigation living in the core of a library
+whose scope is unified 11 for server-rendered Svelte, LaTeX and Markdown.
 
-It is now what it always was underneath: a plugin.
+It is gone. Not demoted to an opt-in plugin — gone, along with `slugify` and
+`HeadingEntry`. Heading ids are
+[`rehype-slug`](https://github.com/rehypejs/rehype-slug), which does
+deduplication properly via `github-slugger`; a table of contents is a walk over
+the same tree in whatever shape your navigation needs. Both are ordinary rehype
+plugins, both are written for unified 11, and both run here unmodified — which
+is the entire reason to be on unified 11.
 
 ```js
-// before — always on, configured through the pipeline
+// before
 skavex({ headings: { levels: [2, 3] } });
 
-// after — opt in, like any other plugin
-import { rehypeHeadings } from '@skavex/skavex/plugins';
+// after
+import rehypeSlug from 'rehype-slug';
 
-skavex({ rehypePlugins: [[rehypeHeadings, { levels: [2, 3] }]] });
+skavex({ rehypePlugins: [rehypeSlug, yourTocPlugin] });
 ```
 
-`rehypePlugins` is the stage that runs before KaTeX, so the ordering guarantee
-the collector depends on — ids derived from the prose rather than from KaTeX's
-markup — is preserved by putting it there. It is the same plugin, unchanged.
+What skavex still contributes is the **ordering**: `rehypePlugins` runs before
+KaTeX, so a plugin reading a heading sees `$O(\log n)$` rather than
+`<span class="katex">…`. Run a slugger after KaTeX and every anchor changes
+whenever KaTeX changes its markup. That guarantee is a pipeline's to own. The
+walk is not.
 
-**This is breaking in three ways:**
+The playground's `contents` plugin is the replacement, editable in the browser:
+the whole feature, about forty lines, owned by the project that wants it.
 
-- The `headings` option is gone. Passing it warns once and is otherwise
-  ignored — an ignored option looks exactly like a working one until someone
-  notices the table of contents is empty. TypeScript callers get an
-  excess-property error instead. The warning goes away in 0.5.0.
-- Headings no longer get ids unless the plugin is on. Anchors, and any
-  `#fragment` link into a document, depend on it.
-- `DocumentMetadata` is now plain `Record<string, unknown>`, so
-  `metadata.headings` is typed `unknown` and needs narrowing at the point of
-  use:
+**Breaking:**
 
-  ```ts
-  import type { HeadingEntry } from '@skavex/skavex/plugins';
-
-  const headings = metadata.headings as HeadingEntry[] | undefined;
-  ```
-
-That last one is the deliberate part rather than a side effect. Only the project
-knows what its own pipeline produces, and a core type that names one plugin's
-output while every other plugin's is `unknown` is not a generic type — it is a
-list of whichever features happened to ship in the box.
+- `headings` option: removed. Passing it warns once and is otherwise ignored —
+  an ignored option looks exactly like a working one until someone notices the
+  table of contents is empty. TypeScript callers get an excess-property error
+  instead. The warning goes away in 0.5.0.
+- `slugify`: removed from `@skavex/skavex`.
+- `rehypeHeadings` and `HeadingEntry`: removed from `@skavex/skavex/plugins`,
+  which is now the two plugins the pipeline cannot do without and nothing else.
+- `DocumentMetadata` is plain `Record<string, unknown>`. Only the project knows
+  what its own pipeline produces, so values arrive typed `unknown` and get
+  narrowed where they are consumed.
+- Headings get no ids unless you add a plugin that assigns them. Every
+  `#fragment` link into a document depends on it.
 
 ### Added
 
 - **`setMetadata(file, values)`** in `@skavex/skavex/utils` — the whole of the
   metadata contract, made explicit. Merges rather than assigns, so a plugin
   cannot erase what ran before it; `file.data.fm = {...}` is the same operation
-  minus that guarantee, and discards frontmatter whenever it runs second. Both
-  bundled plugins now go through it, and have no standing a plugin you write
-  does not.
+  minus that guarantee, and discards frontmatter whenever it runs second.
+  skavex writes exactly one key of its own now, the document's frontmatter, and
+  a plugin you write has the same standing as that.
 
 ### Fixed
 
 Found by a new adversarial test suite (`test/edge-cases.test.js`) that asks what
 a real post contains that nobody thought about — a tutorial whose code samples
-are Svelte, a reference page with "Examples" as a heading four times, a title
-that is an emoji.
+are Svelte, a title that is an emoji, frontmatter that is a YAML list. Every
+payload is compiled through to the Svelte compiler, because the failures that
+matter most happen a stage after the HTML.
 
-- **Duplicate heading ids.** A document saying `## Setup` twice produced two
-  elements with `id="setup"`, which is invalid HTML and sends every link to the
-  second one to the first. Ids are now unique within a document: `setup`,
-  `setup-1`. Ids an author or an earlier plugin wrote are reserved before any
-  are generated, so a written id never moves and a generated one never lands on
-  it.
-- **Empty heading ids.** `## 🎉`, `## ---`, a heading that is only punctuation —
-  anything slugifying to nothing got `id=""`, and a table of contents entry
-  pointing at `#`. They fall back to `heading`, `heading-1`, and so on.
 - **Braces in HTML attributes were not escaped.** Svelte reads
   `title="a {b} c"` as an interpolated attribute, so an image whose alt text or
   title contained braces lost it — quietly, since an expression over an
   undefined variable renders as nothing rather than failing. An element with a
   braced attribute now has its tags serialised and passed through as raw markup,
-  which nothing escapes a second time. Prose, code spans and KaTeX's MathML
-  annotation were already covered; attributes were the gap.
+  which nothing escapes a second time. A character reference in the property
+  does not work: `hast-util-to-html` escapes `&` in an attribute value, so
+  `&#123;` would reach the page as `&#x26;#123;`. Prose, code spans and KaTeX's
+  MathML annotation were already covered; attributes were the gap.
 - **Frontmatter that is a YAML list.** `typeof [] === 'object'`, so a block of
   `- a` spread into the metadata as `{0: 'a'}`. A non-mapping frontmatter block
   is now ignored, as a scalar and an empty one already were.

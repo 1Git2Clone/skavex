@@ -60,6 +60,25 @@ describe('render', () => {
 		expect(metadata.title).toBe('Intro to Big O');
 	});
 
+	it('says so when handed the `headings` option removed in 0.4.0', async () => {
+		// An unknown option is otherwise ignored in silence, and the symptom — a
+		// table of contents that is suddenly empty — is a long way from the cause.
+		/** @type {string[]} */
+		const warnings = [];
+		const original = console.warn;
+		console.warn = (message) => warnings.push(String(message));
+
+		try {
+			// @ts-expect-error - removed in 0.4.0; a JavaScript caller can still pass it.
+			await render('## One\n', { headings: { levels: [2] } });
+		} finally {
+			console.warn = original;
+		}
+
+		expect(warnings.join('\n')).toContain('removed in 0.4.0');
+		expect(warnings.join('\n')).toContain('rehype-slug');
+	});
+
 	it('can disable gfm and math', async () => {
 		const { html } = await render('| a |\n| - |\n\nand $x$', { gfm: false, math: false });
 		expect(html).not.toContain('<table>');

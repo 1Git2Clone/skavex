@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { visit } from 'unist-util-visit';
 import remarkDirective from 'remark-directive';
 import rehypeExternalLinks from 'rehype-external-links';
+import rehypeSlug from 'rehype-slug';
+import { toString } from 'hast-util-to-string';
 import { compile, render } from '../src/index.js';
-import { componentNode } from '../src/utils.js';
+import { componentNode, setMetadata } from '../src/utils.js';
 
 /**
  * Turn `:::note` into a `<Callout>` component.
@@ -62,6 +64,55 @@ describe('third-party rehype plugins', () => {
 		// Internal links are left alone, which is the plugin doing its job rather
 		// than skavex mangling every anchor.
 		expect(html).toMatch(/<a href="\/here"[^>]*>in<\/a>/);
+	});
+
+	it('gives headings ids, which is rehype-slug and not skavex', async () => {
+		// skavex had its own heading collector once, on by default, with an option
+		// and a field in the metadata type. It was one project's requirement living
+		// in the core of a library whose scope is unified 11, Svelte, LaTeX and
+		// Markdown. This is what replaced it: a plugin nobody here wrote, doing the
+		// job properly — github-slugger's deduplication included, which the hand
+		// written one had to have bugs fixed into it to approximate.
+		const { html } = await render('## Setup\n\n## Setup\n\n## 🎉\n', {
+			rehypePlugins: [rehypeSlug]
+		});
+
+		expect(html).toContain('<h2 id="setup">');
+		expect(html).toContain('<h2 id="setup-1">');
+		// And an emoji heading gets `id=""`, which is rehype-slug's call to make
+		// and a project's to override with another plugin. Pinned because it is
+		// the shape of the whole argument: skavex having an opinion about this
+		// would be skavex having an opinion about somebody else's navigation.
+		expect(html).toContain('<h2 id="">🎉</h2>');
+	});
+
+	it('collects a table of contents, in about as many lines as it takes to say so', async () => {
+		// The other half of what was removed, written here in full. This is the
+		// entire feature: a walk, a shape the project chose, one write to the
+		// metadata. There is nothing skavex could add to it that would not be a
+		// guess about what somebody else's navigation needs.
+		/** @returns {(tree: import('hast').Root, file: import('vfile').VFile) => void} */
+		const rehypeToc = () => (tree, file) => {
+			/** @type {{id: string, level: number, text: string}[]} */
+			const toc = [];
+			visit(tree, 'element', (node) => {
+				const level = Number(/^h([1-6])$/.exec(node.tagName)?.[1]);
+				if (level)
+					toc.push({ id: String(node.properties.id), level, text: toString(node) });
+			});
+			setMetadata(file, { toc });
+		};
+
+		const { metadata } = await render('## Why $O(n)$ matters\n\n### Detail\n', {
+			// Order is the one thing that matters: ids before the collector reads
+			// them, and both before KaTeX, which is what `rehypePlugins` guarantees.
+			rehypePlugins: [rehypeSlug, rehypeToc]
+		});
+
+		expect(metadata.toc).toEqual([
+			{ id: 'why-on-matters', level: 2, text: 'Why O(n) matters' },
+			{ id: 'detail', level: 3, text: 'Detail' }
+		]);
 	});
 
 	it('sees prose in headings, because rehype plugins run before KaTeX', async () => {

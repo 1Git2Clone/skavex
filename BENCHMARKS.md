@@ -59,14 +59,16 @@ into.
 ## Build time
 
 20 documents of blog-post length — prose, inline and display maths, a table
-whose cells contain maths, code, headings — median of 7 samples.
+whose cells contain maths, code, headings — median of 7 samples. skavex is
+measured as it ships: no user plugins, because which ones a project adds is a
+project's business.
 
-| Engine                 | Per doc | Throughput | KaTeX    | MathML   | Heading ids | Escapes prose | Keeps components | Compiles |
-| ---------------------- | ------- | ---------- | -------- | -------- | ----------- | ------------- | ---------------- | -------- |
-| skavex                 | 8.62 ms | 116/s      | yes (46) | yes (16) | yes (3)     | yes           | yes              | yes      |
-| hand-rolled unified 11 | 6.83 ms | 146/s      | yes (46) | yes (15) | no          | no            | yes              | **no**   |
-| mdsvex + remark-math 3 | 9.31 ms | 107/s      | yes (46) | yes (15) | no          | no            | yes              | **no**   |
-| mdsvex + remark-math 6 | 3.10 ms | 323/s      | **no**   | **no**   | no          | no            | yes              | **no**   |
+| Engine                 | Per doc  | Throughput | KaTeX    | MathML   | Escapes prose | Keeps components | Compiles |
+| ---------------------- | -------- | ---------- | -------- | -------- | ------------- | ---------------- | -------- |
+| skavex                 | 9.91 ms  | 101/s      | yes (46) | yes (15) | yes           | yes              | yes      |
+| hand-rolled unified 11 | 7.57 ms  | 132/s      | yes (46) | yes (15) | no            | yes              | **no**   |
+| mdsvex + remark-math 3 | 10.07 ms | 99/s       | yes (46) | yes (15) | no            | yes              | **no**   |
+| mdsvex + remark-math 6 | 3.39 ms  | 295/s      | **no**   | **no**   | no            | yes              | **no**   |
 
 Run with `pnpm bench:isolated`, which pins the process to dedicated cores; see
 [Making the numbers reproducible](#making-the-numbers-reproducible).
@@ -101,10 +103,12 @@ escapes text automatically and leaves component tags alone, which is what the
 "Escapes prose" and "Keeps components" columns are showing together: the two
 have to be true at once, or the feature is useless.
 
-**Heading ids** are anchors and a table of contents. mdsvex can get them from
-a plugin; out of the box it does not have them, and skavex derives them from
-prose _before_ KaTeX runs so an id never changes when KaTeX changes its
-markup.
+**Heading ids are absent from this table**, and from skavex. They are
+`rehype-slug`'s job. What matters for a comparison is that `rehype-slug` is
+written for unified 11, so it runs on skavex and does not run on mdsvex — and
+that skavex orders `rehypePlugins` _before_ KaTeX, so an id derives from the
+prose rather than from KaTeX's markup and never changes when KaTeX does. The
+ordering is the contribution; the slugger is not.
 
 ## What it costs a reader
 
