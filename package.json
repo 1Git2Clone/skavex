@@ -66,7 +66,7 @@
 		"test:coverage": "vitest run --coverage",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"build": "rm -rf types && tsc -p tsconfig.json",
+		"build": "rm -rf types && tsc -p tsconfig.json && node scripts/check-exports.js",
 		"check": "tsc -p tsconfig.json && tsc -p tsconfig.check.json && svelte-check --workspace demo --tsconfig tsconfig.json --output human",
 		"prepublishOnly": "pnpm run build && pnpm run lint && pnpm test",
 		"test:e2e": "playwright test",

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
-import { existsSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const { exports: entries } = require('../package.json');
@@ -59,21 +58,16 @@ describe('the public API', () => {
 		}
 	);
 
-	it.each(Object.entries(entries))('%s ships the declaration file it names', (_, target) => {
-		// A types path pointing at nothing makes a consumer fall back to implicit
-		// any while every export still resolves at runtime — invisible until
-		// someone turns on `strict`.
-		//
-		// types/ is generated, not committed, so this needs `pnpm build` to have
-		// run. It has, in the two paths that matter: `prepublishOnly` builds
-		// before testing, and CI's Types step emits them before the Test step.
-		// Said out loud because "cannot find module" would otherwise read as a
-		// broken export rather than a missing prerequisite.
-		expect(
-			existsSync(new URL('../types', import.meta.url)),
-			'types/ has not been generated — run `pnpm build` first'
-		).toBe(true);
-
-		expect(() => require.resolve(`../${target.types.replace('./', '')}`)).not.toThrow();
+	it.each(Object.entries(entries))('%s points at a module that exists', (_, target) => {
+		// Manifest consistency, checked against the source tree rather than the
+		// emitted one. The declaration files are generated, so asserting on them
+		// here would make this suite depend on `pnpm build` having run — which is
+		// how it broke the Pages job, whose only reason to run the tests is the
+		// coverage badge. `scripts/check-exports.js` makes that assertion where
+		// the artefacts actually are, as part of the build.
+		expect(() => require.resolve(`../${target.default.replace('./', '')}`)).not.toThrow();
+		expect(target.types).toBe(
+			target.default.replace('./src/', './types/').replace(/\.js$/, '.d.ts')
+		);
 	});
 });
