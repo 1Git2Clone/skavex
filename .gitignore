@@ -14,3 +14,4 @@ playwright-report/
 bench/results*.json
 *.tgz
 types/
+docs/book/

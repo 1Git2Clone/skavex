@@ -38,6 +38,11 @@
             # height 0. The page still "renders"; it is simply not a page. Any
             # browser assertion about layout measures a fiction without this.
             pkgs.dejavu_fonts
+            # The documentation book. A Rust binary, so it comes from here
+            # rather than from package.json — there is no npm mdbook worth
+            # having, and pinning it with the rest of the toolchain means the
+            # book CI builds is the book a contributor previews.
+            pkgs.mdbook
           ];
 
           # The two variables that make @playwright/test use the browsers above

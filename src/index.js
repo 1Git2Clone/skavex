@@ -14,7 +14,12 @@ export { rehypeEscapeSvelteBraces, escapeText } from './escape.js';
 export { remarkExtractFrontmatter } from './frontmatter.js';
 export { rehypeHeadings } from './headings.js';
 export { slugify } from './slug.js';
-export { findComponents, selectUsedComponents, resolveComponentsDir } from './components.js';
+export {
+	findComponents,
+	selectUsedComponents,
+	referencedComponents,
+	resolveComponentsDir
+} from './components.js';
 
 /**
  * @typedef {import('./browser.js').SkavexOptions} SkavexOptions

@@ -1,0 +1,25 @@
+[book]
+title = "skavex"
+description = "Server-rendered Markdown + LaTeX + Svelte components, documented."
+authors = ["Ivan"]
+language = "en"
+src = "src"
+
+[output.html]
+# Published under /docs/ alongside the playground at the site root; see
+# .forgejo/workflows/pages.yml.
+site-url = "/skavex/skavex/docs/"
+git-repository-url = "https://git.hu-tao.dev/skavex/skavex"
+edit-url-template = "https://git.hu-tao.dev/skavex/skavex/_edit/main/docs/{path}"
+default-theme = "navy"
+preferred-dark-theme = "navy"
+
+[output.html.fold]
+enable = true
+level = 1
+
+# Every fenced block in this book is either a real file or a real terminal
+# session. Nothing is a runnable playground, so the copy button is the only
+# affordance that makes sense.
+[output.html.playground]
+runnable = false

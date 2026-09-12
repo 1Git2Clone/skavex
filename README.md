@@ -1,6 +1,6 @@
 # skavex
 
-[![CI Icon]][CI Status]&emsp;[![Coverage Icon]][Coverage Status]&emsp;[![npm Icon]][npm Status]&emsp;[![Demo Icon]][Demo]&emsp;[![License Icon]][License]
+[![CI Icon]][CI Status]&emsp;[![Coverage Icon]][Coverage Status]&emsp;[![npm Icon]][npm Status]&emsp;[![Docs Icon]][Docs]&emsp;[![Demo Icon]][Demo]&emsp;[![License Icon]][License]
 
 [CI Icon]: https://git.hu-tao.dev/skavex/skavex/badges/workflows/ci.yml/badge.svg
 [CI Status]: https://git.hu-tao.dev/skavex/skavex/actions
@@ -8,6 +8,8 @@
 [Coverage Status]: https://pages.hu-tao.dev/skavex/skavex/coverage.json
 [npm Icon]: https://img.shields.io/npm/v/@skavex/skavex
 [npm Status]: https://www.npmjs.com/package/@skavex/skavex
+[Docs Icon]: https://img.shields.io/badge/docs-book-7aa2f7
+[Docs]: https://pages.hu-tao.dev/skavex/skavex/docs/
 [Demo Icon]: https://img.shields.io/badge/demo-live-7aa2f7
 [Demo]: https://pages.hu-tao.dev/skavex/skavex/
 [License Icon]: https://img.shields.io/badge/license-MIT-blue.svg
@@ -17,6 +19,13 @@
 `.md` files into real Svelte components — so your posts are HTML on first paint,
 with no client-side markdown parsing, no layout shift, and nothing a crawler has
 to run JavaScript to see.
+
+**[Documentation](https://pages.hu-tao.dev/skavex/skavex/docs/)** ·
+**[Playground](https://pages.hu-tao.dev/skavex/skavex/)**
+
+This README is the tour. The book goes further: component children and
+indentation, writing plugins, server versus client rendering, the full options
+reference, and a measured comparison with mdsvex.
 
 The name alternates between the two things it joins:
 

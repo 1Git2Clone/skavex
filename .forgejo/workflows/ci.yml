@@ -113,5 +113,24 @@ jobs:
       - name: Benchmarks
         run: nix develop -c pnpm bench:check
 
+      # The book is published from main by pages.yml, which is too late to find
+      # out that a chapter was renamed and SUMMARY.md was not.
+      #
+      # mdbook does not fail on a chapter that does not exist — it CREATES it,
+      # as a stub holding the title from SUMMARY.md, and reports success. So the
+      # check is not "did the build pass", it is "did the build write into the
+      # source tree": a clean docs/src afterwards means every chapter listed was
+      # already there.
+      - name: Docs
+        run: |
+          nix develop -c pnpm docs:build
+          if ! git diff --quiet -- docs/src ||
+             [ -n "$(git ls-files --others --exclude-standard -- docs/src)" ]; then
+            echo "mdbook wrote into docs/src, which means SUMMARY.md lists a" >&2
+            echo "chapter that does not exist and mdbook stubbed it out:" >&2
+            git status --short -- docs/src >&2
+            exit 1
+          fi
+
       - name: Evaluate the flake
         run: nix flake check --all-systems --no-build --print-build-logs
