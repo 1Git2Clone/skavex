@@ -190,21 +190,48 @@ await writeFile(
 	JSON.stringify(report, null, '\t') + '\n'
 );
 
+/**
+ * Format a metric, or say it is missing.
+ *
+ * Lighthouse's trace engine gives up on a heavily loaded machine and returns
+ * NaN for the timing-derived audits. Printing "NaN ms" in a benchmark table
+ * reads as a measurement, which is worse than admitting there is none.
+ *
+ * @param {number} value
+ * @param {(value: number) => string} format
+ * @returns {string}
+ */
+function metric(value, format) {
+	return Number.isFinite(value) ? format(value) : 'n/a';
+}
+
 console.log('| Page | Performance | CLS | LCP | Blocking | JavaScript |');
 console.log('| --- | --- | --- | --- | --- | --- |');
 for (const result of results) {
 	console.log(
-		`| ${result.label} | ${Math.round(result.score * 100)} | ${result.cls.toFixed(3)} | ` +
-			`${Math.round(result.lcp)} ms | ${Math.round(result.tbt)} ms | ` +
-			`${(result.scripts / 1024).toFixed(0)} kB |`
+		`| ${result.label} ` +
+			`| ${metric(result.score, (value) => String(Math.round(value * 100)))} ` +
+			`| ${metric(result.cls, (value) => value.toFixed(3))} ` +
+			`| ${metric(result.lcp, (value) => `${Math.round(value)} ms`)} ` +
+			`| ${metric(result.tbt, (value) => `${Math.round(value)} ms`)} ` +
+			`| ${(result.scripts / 1024).toFixed(0)} kB |`
 	);
 }
 
 if (process.argv.includes('--check')) {
 	const ssr = results[0];
-	if (ssr.cls > GOOD_CLS) {
+
+	// Layout shift is the claim this benchmark exists to defend, and it is also
+	// the one metric that survives a contended machine: it comes from layout
+	// events rather than from the trace the timing audits need. When even that is
+	// missing there is nothing to judge, and failing the build over an absent
+	// measurement would only teach people to ignore the job.
+	if (!Number.isFinite(ssr.cls)) {
+		console.log('\nNo layout-shift measurement on this machine; nothing to check.');
+	} else if (ssr.cls > GOOD_CLS) {
 		console.error(`\nServer-rendered maths shifted the layout by ${ssr.cls.toFixed(3)}.`);
 		process.exit(1);
+	} else {
+		console.log('\nServer-rendered maths does not move the page.');
 	}
-	console.log('\nServer-rendered maths does not move the page.');
 }

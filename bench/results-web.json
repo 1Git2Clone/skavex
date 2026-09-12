@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-09-12T15:13:25.269Z",
+	"generatedAt": "2026-09-12T15:32:16.514Z",
 	"tool": "lighthouse (mobile profile, simulated throttling)",
 	"results": [
 		{
@@ -8,7 +8,7 @@
 			"note": "no script on the page at all",
 			"score": 0.96,
 			"cls": 0.005787506686565693,
-			"lcp": 2253.555,
+			"lcp": 2253.288,
 			"tbt": 0,
 			"bytes": 244422,
 			"scripts": 0
@@ -17,10 +17,10 @@
 			"route": "/client.html",
 			"label": "client-side KaTeX",
 			"note": "what a project adds when the maths never appeared",
-			"score": 0.86,
-			"cls": 0.156237465488907,
-			"lcp": 3227.6951,
-			"tbt": 26,
+			"score": 0.84,
+			"cls": 0.24618722136950494,
+			"lcp": 2452.8878999999997,
+			"tbt": 114.55605000000003,
 			"bytes": 385948,
 			"scripts": 276551
 		}
