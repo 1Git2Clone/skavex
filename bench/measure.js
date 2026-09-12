@@ -58,30 +58,53 @@ export function median(values) {
 }
 
 /**
- * Time one engine over a corpus.
+ * Time every engine over a corpus, interleaved.
  *
- * Runs the whole corpus per sample and takes the median of the samples. A
- * warmup pass is discarded first, or the first sample would also be paying for
- * JIT compilation of a pipeline that runs thousands of times in a real build.
+ * The interleaving is the point. Timing all of one engine's samples and then
+ * all of the next means any drift in machine load lands entirely on whichever
+ * engine happened to be running — and the ratio between them, which is the
+ * only thing worth reporting, moves with it. Round-robin instead: sample one
+ * of each engine, then sample two, so a busy moment is shared and the median
+ * across samples sees through it.
  *
- * @param {import('./engines.js').Engine} engine
+ * A warmup pass is discarded first, or the first sample would also be paying
+ * for JIT compilation of a pipeline that runs thousands of times in a real
+ * build.
+ *
+ * @param {import('./engines.js').Engine[]} engines
  * @param {string[]} documents
  * @param {number} samples
- * @returns {Promise<{msPerDoc: number, docsPerSecond: number, bytes: number}>}
+ * @returns {Promise<Map<string, {msPerDoc: number, docsPerSecond: number, bytes: number}>>}
  */
-export async function time(engine, documents, samples) {
-	for (const source of documents) await engine.compile(source);
-
-	/** @type {number[]} */
-	const timings = [];
-	let bytes = 0;
-
-	for (let sample = 0; sample < samples; sample++) {
-		const started = performance.now();
-		for (const source of documents) bytes = (await engine.compile(source)).length;
-		timings.push((performance.now() - started) / documents.length);
+export async function timeAll(engines, documents, samples) {
+	for (const engine of engines) {
+		for (const source of documents) await engine.compile(source);
 	}
 
-	const msPerDoc = median(timings);
-	return { msPerDoc, docsPerSecond: 1000 / msPerDoc, bytes };
+	/** @type {Map<string, number[]>} */
+	const timings = new Map(engines.map((engine) => [engine.id, []]));
+	/** @type {Map<string, number>} */
+	const sizes = new Map();
+
+	for (let sample = 0; sample < samples; sample++) {
+		for (const engine of engines) {
+			const started = performance.now();
+			let bytes = 0;
+			for (const source of documents) bytes = (await engine.compile(source)).length;
+			/** @type {number[]} */ (timings.get(engine.id)).push(
+				(performance.now() - started) / documents.length
+			);
+			sizes.set(engine.id, bytes);
+		}
+	}
+
+	return new Map(
+		engines.map((engine) => {
+			const msPerDoc = median(/** @type {number[]} */ (timings.get(engine.id)));
+			return [
+				engine.id,
+				{ msPerDoc, docsPerSecond: 1000 / msPerDoc, bytes: sizes.get(engine.id) ?? 0 }
+			];
+		})
+	);
 }

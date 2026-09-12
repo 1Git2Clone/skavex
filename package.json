@@ -62,6 +62,7 @@
 		"prepublishOnly": "pnpm run build && pnpm run lint && pnpm test",
 		"test:e2e": "playwright test",
 		"bench": "node bench/run.js",
+		"bench:isolated": "scripts/bench-isolated.sh bench/run.js",
 		"bench:web": "node bench/web.js",
 		"bench:check": "node bench/run.js --check && node bench/web.js --check",
 		"demo": "vite --config demo/vite.config.js demo",

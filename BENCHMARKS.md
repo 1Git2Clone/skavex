@@ -4,10 +4,37 @@ Everything here is produced by code in `bench/`, not quoted from anywhere:
 
 ```sh
 nix develop
-pnpm bench        # build-time throughput and capability
-pnpm bench:web    # what the output costs a reader, via Lighthouse
-pnpm bench:check  # both, failing on a regression — what CI runs
+pnpm bench           # build-time throughput and capability
+pnpm bench:isolated  # the same, on CPUs nothing else is using
+pnpm bench:web       # what the output costs a reader, via Lighthouse
+pnpm bench:check     # both, failing on a regression — what CI runs
 ```
+
+### Making the numbers reproducible
+
+They move with whatever else the machine is doing, and two things take most of
+that out.
+
+**Samples are interleaved across engines.** Timing all of one engine's samples
+and then all of the next means any drift in load lands entirely on whichever
+engine was running at the time — and moves the ratio between them, which is
+the only figure worth reporting. Round-robin instead: sample one of each, then
+sample two, so a busy moment is shared.
+
+**`pnpm bench:isolated` confines the run to its own cores**, via a transient
+systemd scope — no daemon, no image, no root, and cgroups are what a container
+would use for this anyway. Measured over five runs of the skavex-to-bare
+ratio:
+
+|                              | Range         | Spread   |
+| ---------------------------- | ------------- | -------- |
+| sequential, shared cores     | 1.17× – 1.47× | 0.30     |
+| interleaved, shared cores    | 1.22× – 1.39× | 0.17     |
+| interleaved, dedicated cores | 1.31× – 1.40× | **0.09** |
+
+CI gets the interleaving but not the isolation: the runner is an unprivileged
+container on a shared box and cannot pin itself to anything. That is one more
+reason its gate is a ratio and never a millisecond count.
 
 Numbers below were measured on 2026-09-12, node 26.8.1, on one workstation.
 Treat the absolute milliseconds as machine-specific and the ratios and
