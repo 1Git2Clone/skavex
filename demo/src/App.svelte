@@ -223,6 +223,7 @@
 		with skavex ships neither.
 	</p>
 	<nav>
+		<a href="./docs/">docs</a>
 		<a href="https://www.npmjs.com/package/@skavex/skavex">npm</a>
 		<a href="https://git.hu-tao.dev/skavex/skavex">source</a>
 	</nav>
@@ -368,8 +369,12 @@
 <footer>
 	<span>@skavex/skavex v{__APP_VERSION__} · MIT</span>
 	<nav>
+		<!-- Relative: the book is published as a subdirectory of this page, so
+		     this keeps working on a local `pnpm demo` and under the /skavex/skavex
+		     prefix the site is served from, without either being hardcoded. -->
+		<a href="./docs/">documentation</a>
+		<a href="./docs/benchmarks.html">benchmarks</a>
 		<a href="https://git.hu-tao.dev/skavex/skavex">source</a>
-		<a href="https://git.hu-tao.dev/skavex/skavex/src/branch/main/BENCHMARKS.md">benchmarks</a>
 		<a href="https://www.npmjs.com/package/@skavex/skavex">npm</a>
 	</nav>
 </footer>

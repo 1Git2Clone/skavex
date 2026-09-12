@@ -3,5 +3,6 @@ test/.tmp/
 flake.lock
 types/
 demo/dist/
+docs/book/
 test-results/
 playwright-report/

@@ -65,6 +65,8 @@
 		"bench:isolated": "scripts/bench-isolated.sh bench/run.js",
 		"bench:web": "node bench/web.js",
 		"bench:check": "node bench/run.js --check && node bench/web.js --check",
+		"docs": "mdbook serve docs --open",
+		"docs:build": "mdbook build docs",
 		"demo": "vite --config demo/vite.config.js demo",
 		"demo:build": "vite build --config demo/vite.config.js demo"
 	},

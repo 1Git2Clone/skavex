@@ -12,6 +12,9 @@ export default [
 			'test/.tmp/**',
 			'test/fixtures/**',
 			'demo/dist/**',
+			// mdbook's rendered output: vendored highlight.js and its own theme
+			// scripts, none of it written here.
+			'docs/book/**',
 			'coverage/**'
 		]
 	},

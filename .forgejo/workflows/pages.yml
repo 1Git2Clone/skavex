@@ -1,9 +1,18 @@
 # ==============================================================================
-# Pages — the live demo at pages.hu-tao.dev/skavex/skavex
+# Pages — the playground and the book at pages.hu-tao.dev/skavex/skavex
 # ==============================================================================
-# The editor in demo/ is the library's own argument: markdown and LaTeX go in,
-# rendered HTML and real Svelte component source come out, in a browser, from
-# the same `render` and `buildModule` a consumer's build calls.
+# Two things are published from here, into one directory tree:
+#
+#   /skavex/skavex/        the playground in demo/
+#   /skavex/skavex/docs/   the mdBook in docs/
+#
+# The playground is the library's own argument: markdown and LaTeX go in,
+# rendered HTML and a running Svelte component come out, in a browser, from the
+# same `render` and `buildModule` a consumer's build calls.
+#
+# The playground stays at the root because that is the URL already linked from
+# the README badge, from npm and from the book. Moving it to make room for the
+# book would break all three to save one path segment.
 name: Pages
 
 on:
@@ -17,7 +26,7 @@ concurrency:
 
 jobs:
   pages:
-    name: Build and publish the demo
+    name: Build and publish the playground and the book
     # Same image as ci.yml, for the same reason: node and pnpm come from
     # flake.nix, so the demo is built with the toolchain the tests ran under.
     # No node in the container means no `uses:` — hence the manual checkout.
@@ -48,10 +57,16 @@ jobs:
       # asset URL has to carry the /<owner>/<repo> prefix the site is served
       # under. Without this the page loads and then requests /assets/... at the
       # host root and renders unstyled.
-      - name: Build
+      - name: Build the playground
         run: nix develop -c pnpm run demo:build
         env:
           BASE_PATH: /${{ github.repository }}
+
+      # mdbook resolves its own asset links relative to each page, so unlike
+      # the Vite build it needs no base path — only book.toml's site-url, which
+      # is what makes the sidebar's links absolute.
+      - name: Build the book
+        run: nix develop -c pnpm run docs:build
 
       # Self-hosted because codecov and its equivalents need the repository to be
       # on GitHub, GitLab or Bitbucket, and this one is on a Forgejo instance.
@@ -66,5 +81,6 @@ jobs:
       - name: Publish
         run: |
           dest="/pages/$GITHUB_REPOSITORY"
-          rm -rf "$dest" && mkdir -p "$dest"
+          rm -rf "$dest" && mkdir -p "$dest/docs"
           cp -r demo/dist/. "$dest/"
+          cp -r docs/book/. "$dest/docs/"
