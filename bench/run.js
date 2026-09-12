@@ -11,7 +11,7 @@
 import { writeFile } from 'node:fs/promises';
 import { ENGINES } from './engines.js';
 import { corpus } from './corpus.js';
-import { features, time } from './measure.js';
+import { features, timeAll } from './measure.js';
 
 /** Documents per sample. Enough that per-document noise averages out. */
 const DOCUMENTS = 20;
@@ -59,20 +59,18 @@ const GUARANTEES = {
  */
 async function measure() {
 	const documents = corpus(DOCUMENTS);
+	const timings = await timeAll(ENGINES, documents, SAMPLES);
 
 	/** @type {any[]} */
 	const results = [];
 
 	for (const engine of ENGINES) {
-		const output = await engine.compile(documents[0]);
-		const timing = await time(engine, documents, SAMPLES);
-
 		results.push({
 			id: engine.id,
 			label: engine.label,
 			note: engine.note,
-			...timing,
-			features: features(output)
+			.../** @type {any} */ (timings.get(engine.id)),
+			features: features(await engine.compile(documents[0]))
 		});
 	}
 
