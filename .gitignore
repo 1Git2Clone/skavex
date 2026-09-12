@@ -6,5 +6,6 @@ node_modules/
 result
 test/.tmp/
 coverage/
+demo/dist/
 *.tgz
 types/
