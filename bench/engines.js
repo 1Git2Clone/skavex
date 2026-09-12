@@ -5,6 +5,12 @@
  * libraries are for — so the comparison is of the same job, not of two
  * different ones.
  *
+ * The bare pipeline is here because it is the honest alternative: anyone
+ * capable of choosing a markdown engine can wire remark and rehype together in
+ * twenty lines, and that is the thing skavex has to justify itself against.
+ * Being faster than it would be suspicious — skavex IS that pipeline, plus the
+ * work that makes its output usable as Svelte.
+ *
  * mdsvex appears twice on purpose. It pins unified 8.4.2, and the remark and
  * rehype ecosystem moved to unified 11 years ago. Pairing it with today's
  * remark-math produces a document with no maths in it and no error of any
@@ -15,6 +21,12 @@
  * @module
  */
 
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkFrontmatter from 'remark-frontmatter';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
 import { compile as mdsvexCompile } from 'mdsvex';
 import remarkMathModern from 'remark-math';
 import rehypeKatexModern from 'rehype-katex';
@@ -37,6 +49,23 @@ export const ENGINES = [
 		label: 'skavex',
 		note: 'unified 11, KaTeX at build time',
 		compile: async (source) => (await skavexCompile(source)).code
+	},
+	{
+		id: 'bare',
+		label: 'hand-rolled unified 11',
+		note: 'the same modern pipeline, wired by hand, doing none of the extra work',
+		compile: async (source) =>
+			String(
+				await unified()
+					.use(remarkParse)
+					.use(remarkFrontmatter, ['yaml'])
+					.use(remarkGfm)
+					.use(remarkMathModern)
+					.use(remarkRehype, { allowDangerousHtml: true })
+					.use(rehypeKatexModern)
+					.use(rehypeStringify, { allowDangerousHtml: true })
+					.process(source)
+			)
 	},
 	{
 		id: 'mdsvex-legacy',

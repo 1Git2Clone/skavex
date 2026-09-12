@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-09-12T15:31:59.563Z",
+	"generatedAt": "2026-09-12T15:51:24.395Z",
 	"node": "v26.8.1",
 	"documents": 20,
 	"samples": 7,
@@ -8,8 +8,8 @@
 			"id": "skavex",
 			"label": "skavex",
 			"note": "unified 11, KaTeX at build time",
-			"msPerDoc": 9.168575799999996,
-			"docsPerSecond": 109.06819355738985,
+			"msPerDoc": 9.52160225,
+			"docsPerSecond": 105.0243408350732,
 			"bytes": 22610,
 			"features": {
 				"katex": 46,
@@ -21,11 +21,27 @@
 			}
 		},
 		{
+			"id": "bare",
+			"label": "hand-rolled unified 11",
+			"note": "the same modern pipeline, wired by hand, doing none of the extra work",
+			"msPerDoc": 7.103727400000002,
+			"docsPerSecond": 140.771167542268,
+			"bytes": 20927,
+			"features": {
+				"katex": 46,
+				"mathml": 15,
+				"headingIds": 0,
+				"escapesProse": false,
+				"keepsComponents": true,
+				"compiles": false
+			}
+		},
+		{
 			"id": "mdsvex-legacy",
 			"label": "mdsvex + remark-math 3",
 			"note": "the newest maths plugins mdsvex can actually run",
-			"msPerDoc": 9.414201699999989,
-			"docsPerSecond": 106.22249574278838,
+			"msPerDoc": 9.491107799999986,
+			"docsPerSecond": 105.36177873777827,
 			"bytes": 26001,
 			"features": {
 				"katex": 46,
@@ -40,8 +56,8 @@
 			"id": "mdsvex-modern",
 			"label": "mdsvex + remark-math 6",
 			"note": "what a new project gets by installing current versions",
-			"msPerDoc": 3.0862079499999937,
-			"docsPerSecond": 324.02223576671236,
+			"msPerDoc": 3.002810099999988,
+			"docsPerSecond": 333.0213921952654,
 			"bytes": 4479,
 			"features": {
 				"katex": 0,

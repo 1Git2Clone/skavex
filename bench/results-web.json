@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-09-12T15:32:16.514Z",
+	"generatedAt": "2026-09-12T15:52:35.077Z",
 	"tool": "lighthouse (mobile profile, simulated throttling)",
 	"results": [
 		{
@@ -8,19 +8,30 @@
 			"note": "no script on the page at all",
 			"score": 0.96,
 			"cls": 0.005787506686565693,
-			"lcp": 2253.288,
+			"lcp": 2251.9170000000004,
 			"tbt": 0,
 			"bytes": 244422,
+			"scripts": 0
+		},
+		{
+			"route": "/mdsvex.html",
+			"label": "mdsvex + math 3 (also in the HTML)",
+			"note": "the control: build-time maths too",
+			"score": 0.95,
+			"cls": 0.005787506686565693,
+			"lcp": 2401.9146,
+			"tbt": 0,
+			"bytes": 281665,
 			"scripts": 0
 		},
 		{
 			"route": "/client.html",
 			"label": "client-side KaTeX",
 			"note": "what a project adds when the maths never appeared",
-			"score": 0.84,
-			"cls": 0.24618722136950494,
-			"lcp": 2452.8878999999997,
-			"tbt": 114.55605000000003,
+			"score": 0.86,
+			"cls": 0.156237465488907,
+			"lcp": 3202.5463999999997,
+			"tbt": 1,
 			"bytes": 385948,
 			"scripts": 276551
 		}
