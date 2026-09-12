@@ -1,0 +1,70 @@
+// ==============================================================================
+// Renovate — dependency updates as pull requests
+// ==============================================================================
+// There is no workflow in this repo and there should not be one. The bot lives
+// in hutao/vps (.forgejo/workflows/renovate.yml) and runs with
+// RENOVATE_AUTODISCOVER_NAMESPACES=hutao,skavex, so this repo is already in
+// scope. A second workflow here would open a second set of pull requests
+// against the same branches.
+//
+// This file is only this repository's config, read from the clone Renovate
+// makes of it. Nothing below is inherited from hutao/vps's renovate.json5 —
+// Renovate does not chain repo configs — so the parts that look duplicated are
+// the parts that genuinely have to be stated twice.
+//
+// .json5 rather than .json so each rule can carry the reason it exists.
+// Renovate's validator rejects unknown keys, so a "_comment" field in JSON
+// fails the run rather than documenting it.
+{
+	$schema: 'https://docs.renovatebot.com/renovate-schema.json',
+	extends: ['config:recommended'],
+
+	// Matches the workflow's cron, which is UTC. No `schedule` key here on
+	// purpose: the cron IS the schedule, and a second window would silently AND
+	// with it, which looks like Renovate being broken rather than like two clocks
+	// disagreeing.
+	timezone: 'UTC',
+
+	// flake.nix pins nixpkgs to a release branch, not a rev, so the nix manager
+	// has no version to bump on its own. lockFileMaintenance is what actually
+	// moves it — and with it nodejs_26, pnpm and playwright-driver.
+	nix: { enabled: true },
+	lockFileMaintenance: {
+		enabled: true,
+		// "No window of my own": whenever the weekly workflow runs, this is
+		// eligible. Renovate's default for this key is "before 4am on monday",
+		// which would AND with the cron as described above.
+		schedule: ['* * * * *']
+	},
+
+	packageRules: [
+		// @playwright/test is pinned exactly, and not as a style choice: it has to
+		// match pkgs.playwright-driver from the flake, because that is where the
+		// browsers come from (PLAYWRIGHT_BROWSERS_PATH in flake.nix). The npm
+		// package refuses a browser revision it was not built for.
+		//
+		// So an npm-only bump breaks the browser suite in exactly one place — CI,
+		// which is the only environment that uses the flake's browsers — while
+		// passing for anyone who happens to have their own. The two move together,
+		// by hand, after lockFileMaintenance moves nixpkgs.
+		{
+			matchPackageNames: ['@playwright/test'],
+			enabled: false,
+			description: 'Must match pkgs.playwright-driver; bump both together.'
+		},
+
+		// These two aliases are deliberately old. remark-math@3 and rehype-katex@3
+		// are the versions that work with unified 8, which is what mdsvex pins —
+		// they exist so BENCHMARKS.md can show that mdsvex does render KaTeX with
+		// the right plugin pair, rather than asserting it.
+		//
+		// Bumping them to 6 and 7 would not update a dependency, it would delete
+		// the evidence: the benchmark would quietly become a second copy of the
+		// skavex configuration and still pass.
+		{
+			matchPackageNames: ['remark-math-legacy', 'rehype-katex-legacy'],
+			enabled: false,
+			description: 'Pinned to the unified 8 era on purpose; see BENCHMARKS.md.'
+		}
+	]
+}
