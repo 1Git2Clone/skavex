@@ -190,9 +190,25 @@ function check(report) {
 
 	for (const [key, expected] of Object.entries(GUARANTEES.skavex)) {
 		const actual = skavex.features[/** @type {keyof import('./measure.js').Features} */ (key)];
+
+		// A guarantee and its measurement have to be the same kind of thing.
+		// Coercing instead — which is what `Number(actual)` did here until it was
+		// caught — turns `true` into 1 and reports a bogus threshold failure
+		// rather than the mismatch that actually happened.
+		if (typeof expected !== typeof actual) {
+			failures.push(
+				`skavex.${key}: the guarantee is a ${typeof expected} but the ` +
+					`measurement is a ${typeof actual}`
+			);
+			continue;
+		}
+
 		// Counts may grow when the corpus or KaTeX's markup changes; they must
 		// never shrink, which is what a silent failure looks like.
-		const ok = typeof expected === 'number' ? Number(actual) >= expected : actual === expected;
+		const ok =
+			typeof expected === 'number' && typeof actual === 'number'
+				? actual >= expected
+				: actual === expected;
 		if (!ok) failures.push(`skavex.${key}: expected ${expected}, measured ${actual}`);
 	}
 

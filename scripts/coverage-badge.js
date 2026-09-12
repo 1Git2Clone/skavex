@@ -34,7 +34,11 @@ const summary = JSON.parse(await readFile('coverage/coverage-summary.json', 'utf
 // Lines rather than statements: it is the figure every other coverage badge
 // reports, so this one means the same thing as the ones beside it.
 const percentage = summary.total.lines.pct;
-const colour = /** @type {[number, string]} */ (COLOURS.find(([floor]) => percentage >= floor))[1];
+// The last threshold is 0, so a real percentage always matches — but `find`
+// returns undefined for NaN, which is exactly what a malformed summary yields.
+const band = COLOURS.find(([floor]) => percentage >= floor);
+if (!band) throw new Error(`coverage summary gave no usable percentage (got ${percentage})`);
+const colour = band[1];
 
 await writeFile(
 	output,

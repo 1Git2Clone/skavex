@@ -100,16 +100,21 @@ export async function timeAll(engines, documents, samples) {
 			const started = performance.now();
 			let bytes = 0;
 			for (const source of documents) bytes = (await engine.compile(source)).length;
-			/** @type {number[]} */ (timings.get(engine.id)).push(
-				(performance.now() - started) / documents.length
-			);
+			const samplesFor = timings.get(engine.id);
+			// Seeded for every engine above, so this cannot happen — which is why it
+			// should say so rather than be asserted away and resurface as a median
+			// computed over nothing.
+			if (!samplesFor) throw new Error(`no sample list for engine "${engine.id}"`);
+			samplesFor.push((performance.now() - started) / documents.length);
 			sizes.set(engine.id, bytes);
 		}
 	}
 
 	return new Map(
 		engines.map((engine) => {
-			const msPerDoc = median(/** @type {number[]} */ (timings.get(engine.id)));
+			const samplesFor = timings.get(engine.id);
+			if (!samplesFor) throw new Error(`no sample list for engine "${engine.id}"`);
+			const msPerDoc = median(samplesFor);
 			return [
 				engine.id,
 				{ msPerDoc, docsPerSecond: 1000 / msPerDoc, bytes: sizes.get(engine.id) ?? 0 }

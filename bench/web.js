@@ -132,7 +132,14 @@ async function serve(pages) {
 	});
 
 	await new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(undefined)));
-	const { port } = /** @type {import('node:net').AddressInfo} */ (server.address());
+	// address() is string | AddressInfo | null: a pipe, a TCP socket, or nothing
+	// bound yet. Only the second has a port, and asserting past the other two
+	// would produce `http://127.0.0.1:undefined`.
+	const address = server.address();
+	if (address === null || typeof address === 'string') {
+		throw new Error('the benchmark server did not bind a TCP port');
+	}
+	const { port } = address;
 
 	return {
 		url: `http://127.0.0.1:${port}`,
