@@ -342,9 +342,17 @@
 
 	<section class="pane">
 		<div class="bar">
-			{#each TABS as name (name)}
-				<button class:active={tab === name} onclick={() => (tab = name)}>{name}</button>
-			{/each}
+			<!--
+				The tabs are grouped so the group can be the thing that gives way when
+				the pane is narrow. Left as direct children of the bar they cannot
+				shrink and cannot wrap, so they push the timing out through the bar's
+				own padding instead.
+			-->
+			<div class="tabs">
+				{#each TABS as name (name)}
+					<button class:active={tab === name} onclick={() => (tab = name)}>{name}</button>
+				{/each}
+			</div>
 			<span class="timing">{elapsed.toFixed(1)} ms</span>
 		</div>
 
