@@ -24,7 +24,12 @@ export function remarkExtractFrontmatter() {
 	return (tree, file) => {
 		visit(tree, 'yaml', (node) => {
 			const parsed = parseYaml(node.value);
-			if (parsed === null || typeof parsed !== 'object') return;
+
+			// An object, specifically. YAML happily parses a document that is a
+			// list or a bare scalar, and `typeof [] === 'object'` — so without the
+			// array check a frontmatter block of `- a` spreads into metadata as
+			// `{0: 'a'}`, which is nobody's intent and hard to trace back.
+			if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return;
 
 			setMetadata(file, /** @type {Record<string, unknown>} */ (parsed));
 		});

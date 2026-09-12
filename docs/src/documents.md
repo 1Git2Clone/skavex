@@ -99,6 +99,12 @@ source. Do it afterwards and the slug is built from `<span class="katex">…`,
 which changes whenever KaTeX's output does — silently breaking every anchor
 anyone has shared.
 
+Ids are unique within a document — a page that says `## Examples` under four
+sections gets `examples`, `examples-1`, `examples-2`, `examples-3` — and a
+heading whose text slugifies to nothing (`## 🎉`) gets `heading`, `heading-1`.
+Build navigation from the collected `id` rather than by calling `slugify` again
+on the other side, which cannot know about either case.
+
 **One `slugify`, used on both sides.** A heading's `id` and a table of
 contents' `href` are produced at different times, so a project that
 reimplements the slug for its navigation keeps two copies that must agree
@@ -115,6 +121,25 @@ reads to a screen reader, the same in the sidebar as in the text.
 Nothing here is privileged. A project wanting a different shape writes its own
 plugin the same way this one is written, and does not use this one — there is no
 option to turn off, because there is nothing on.
+
+## What a document cannot contain
+
+Two things, both because a document becomes a real Svelte component rather than
+a string of HTML:
+
+**A raw `<script>` block.** Svelte permits one instance script per component and
+skavex generates it, so an author's collides with it. skavex does not hoist or
+merge the two. A document that needs behaviour should use a component, which is
+the thing components are for.
+
+**Raw HTML written in uppercase.** `<BR>` and `<IMG>` are legal HTML, but
+Svelte's rule is that a capitalised tag is a component — so it is not void, it
+swallows what follows it, and the enclosing paragraph fails to close. Write
+`<br>`. Nothing can be done about this without rewriting the markup an author
+wrote, which is worse.
+
+Both fail loudly, at compile time, with a Svelte error. Neither can corrupt a
+page quietly.
 
 ## Braces
 

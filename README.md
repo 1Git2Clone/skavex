@@ -255,6 +255,12 @@ source. Do it afterwards and the slug is built from `<span class="katex">…`,
 which changes whenever KaTeX's output does — silently breaking every anchor
 anyone has shared.
 
+Ids are unique within a document — a page that says `## Examples` under four
+sections gets `examples`, `examples-1`, `examples-2`, `examples-3` — and a
+heading whose text slugifies to nothing (`## 🎉`) gets `heading`, `heading-1`.
+Build navigation from the collected `id` rather than by calling `slugify` again
+on the other side, which cannot know about either case.
+
 **One `slugify`, used on both sides.** A heading's `id` and a table of contents'
 `href` are produced at different times, so a project that reimplements the slug
 for its navigation keeps two copies that must agree forever. They will not.

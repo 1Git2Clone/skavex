@@ -62,6 +62,39 @@ list of whichever features happened to ship in the box.
   bundled plugins now go through it, and have no standing a plugin you write
   does not.
 
+### Fixed
+
+Found by a new adversarial test suite (`test/edge-cases.test.js`) that asks what
+a real post contains that nobody thought about — a tutorial whose code samples
+are Svelte, a reference page with "Examples" as a heading four times, a title
+that is an emoji.
+
+- **Duplicate heading ids.** A document saying `## Setup` twice produced two
+  elements with `id="setup"`, which is invalid HTML and sends every link to the
+  second one to the first. Ids are now unique within a document: `setup`,
+  `setup-1`. Ids an author or an earlier plugin wrote are reserved before any
+  are generated, so a written id never moves and a generated one never lands on
+  it.
+- **Empty heading ids.** `## 🎉`, `## ---`, a heading that is only punctuation —
+  anything slugifying to nothing got `id=""`, and a table of contents entry
+  pointing at `#`. They fall back to `heading`, `heading-1`, and so on.
+- **Braces in HTML attributes were not escaped.** Svelte reads
+  `title="a {b} c"` as an interpolated attribute, so an image whose alt text or
+  title contained braces lost it — quietly, since an expression over an
+  undefined variable renders as nothing rather than failing. An element with a
+  braced attribute now has its tags serialised and passed through as raw markup,
+  which nothing escapes a second time. Prose, code spans and KaTeX's MathML
+  annotation were already covered; attributes were the gap.
+- **Frontmatter that is a YAML list.** `typeof [] === 'object'`, so a block of
+  `- a` spread into the metadata as `{0: 'a'}`. A non-mapping frontmatter block
+  is now ignored, as a scalar and an empty one already were.
+
+Two limitations are now pinned by tests rather than left to be discovered: a
+raw `<script>` block in a document collides with the one skavex generates and
+Svelte permits only one, and raw HTML written in uppercase (`<BR>`) is read by
+Svelte as a component tag. Neither is fixable without rewriting what the author
+wrote; both now fail against a test that says so.
+
 ## 0.3.0
 
 ### Changed — the public API is now a decision rather than a leftover

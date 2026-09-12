@@ -80,6 +80,7 @@
 		"demo:build": "vite build --config demo/vite.config.js demo"
 	},
 	"dependencies": {
+		"hast-util-to-html": "^9.0.5",
 		"katex": "^0.18.7",
 		"rehype-katex": "^7.0.1",
 		"rehype-stringify": "^10.0.1",
