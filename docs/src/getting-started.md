@@ -38,6 +38,21 @@ const posts = import.meta.glob('/src/content/*.md', { eager: true });
 const { default: Post, metadata } = posts['/src/content/hello.md'];
 ```
 
+## Installing from the Forgejo registry
+
+The package is published to npm and, at the same version, to the instance that
+hosts its source. To install from there instead, point the `@skavex` scope at
+that registry:
+
+```
+@skavex:registry=https://git.hu-tao.dev/api/packages/skavex/npm/
+```
+
+in your project's npm configuration file. The registry is public, so reading it
+needs no account. npm remains the canonical copy; this exists so the package can
+be installed from the same place as its source, and so a project that mirrors
+its dependencies has somewhere to mirror from.
+
 ## The one failure worth knowing up front
 
 **Forgetting `.md` in `extensions`.** skavex emits valid Svelte, the Svelte

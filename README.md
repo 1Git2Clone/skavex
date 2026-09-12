@@ -120,6 +120,9 @@ has both sets of numbers and why they disagree.
 pnpm add -D @skavex/skavex
 ```
 
+Also published to this instance's own registry at the same version — see
+[installing from the Forgejo registry](https://pages.hu-tao.dev/skavex/skavex/docs/getting-started.html#installing-from-the-forgejo-registry).
+
 ## Use
 
 skavex is a Vite plugin, so it goes in `vite.config.js`:

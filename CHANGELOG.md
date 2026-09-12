@@ -99,6 +99,11 @@ so the next addition has to be written down before it ships.
 
 ### Infrastructure
 
+- **Published to the Forgejo package registry** as well as npm, at the same
+  version, by `.forgejo/workflows/publish.yml` on a tag. npm stays the canonical
+  copy and is still published by hand, because publishing there is irreversible
+  and should not be something a push can do on its own.
+
 - CI installs fonts, without which its browser laid out every page with zero
   metrics and produced Lighthouse scores of `0`.
 - Benchmarks run pinned to dedicated cores (`pnpm bench:isolated`).
