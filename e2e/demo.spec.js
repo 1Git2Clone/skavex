@@ -87,11 +87,13 @@ async function describeGeometry(page, selector) {
 		if (!element) return `${target}: not in the DOM at all`;
 
 		const lines = [`viewport ${globalThis.innerWidth}x${globalThis.innerHeight}`];
-		for (
-			let node = element;
-			node && node !== globalThis.document.documentElement;
-			node = node.parentElement
-		) {
+
+		// parentElement is Element | null, so the walker has to admit null rather
+		// than inherit `Element` from the starting node.
+		/** @type {globalThis.Element | null} */
+		let node = element;
+
+		for (; node && node !== globalThis.document.documentElement; node = node.parentElement) {
 			const box = node.getBoundingClientRect();
 			const styles = globalThis.getComputedStyle(node);
 			const name =
