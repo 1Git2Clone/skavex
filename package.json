@@ -20,7 +20,12 @@
 		"type": "git",
 		"url": "https://git.hu-tao.dev/skavex/skavex.git"
 	},
+	"bugs": {
+		"url": "https://git.hu-tao.dev/skavex/skavex/issues"
+	},
+	"homepage": "https://pages.hu-tao.dev/skavex/skavex/docs/",
 	"type": "module",
+	"sideEffects": false,
 	"files": [
 		"src",
 		"types",
@@ -32,13 +37,17 @@
 			"types": "./types/index.d.ts",
 			"default": "./src/index.js"
 		},
+		"./vite": {
+			"types": "./types/vite.d.ts",
+			"default": "./src/vite.js"
+		},
 		"./browser": {
 			"types": "./types/browser.d.ts",
 			"default": "./src/browser.js"
 		},
-		"./vite": {
-			"types": "./types/vite.d.ts",
-			"default": "./src/vite.js"
+		"./plugins": {
+			"types": "./types/plugins.d.ts",
+			"default": "./src/plugins.js"
 		},
 		"./utils": {
 			"types": "./types/utils.d.ts",
@@ -109,7 +118,10 @@
 		"lighthouse": "^13.4.1",
 		"mdsvex": "^0.12.8",
 		"prettier": "^3.9.6",
+		"prettier-plugin-svelte": "^4.1.1",
+		"rehype-external-links": "^3.0.0",
 		"rehype-katex-legacy": "npm:rehype-katex@^3.1.0",
+		"remark-directive": "^4.0.0",
 		"remark-math-legacy": "npm:remark-math@^3.0.1",
 		"svelte": "^5.57.0",
 		"svelte-check": "^4.7.6",

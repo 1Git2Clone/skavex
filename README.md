@@ -17,8 +17,8 @@
 
 **Server-rendered Markdown + LaTeX for Svelte.** A Vite plugin that compiles
 `.md` files into real Svelte components — so your posts are HTML on first paint,
-with no client-side markdown parsing, no layout shift, and nothing a crawler has
-to run JavaScript to see.
+with no markdown parser in the bundle, no maths rendering on the main thread,
+and nothing a crawler has to run JavaScript to see.
 
 **[Documentation](https://pages.hu-tao.dev/skavex/skavex/docs/)** ·
 **[Playground](https://pages.hu-tao.dev/skavex/skavex/)**
@@ -61,15 +61,19 @@ one regresses. Full method in
 | Heading ids and TOC data        | yes     | no                     | no              | no              |
 | Escapes prose, keeps components | yes     | no                     | no              | no              |
 | Output compiles as Svelte       | yes     | **no**                 | **no**          | **no**          |
-| Per document                    | 8.41 ms | **7.18 ms**            | 9.37 ms         | 2.98 ms         |
+| Per document                    | 8.62 ms | 6.83 ms                | 9.31 ms         | 3.10 ms         |
 
-**skavex is not fast.** It is 20–50% _slower_ than the same pipeline wired by
-hand, because it does more: it collects headings, renders their maths for a
-table of contents, and escapes prose without touching component tags. Against
-mdsvex it is a tie. And `remark-math 6` is not fast, it is _empty_ — that
-column is the cost of skipping every formula.
+**Against the only mdsvex that renders maths, skavex is a little quicker** —
+and across repeated runs the two trade places within about 15%, which is noise.
+Nobody should choose a markdown engine on that; the point is that the feature
+list below costs nothing in throughput.
 
-So the case is not speed. It is these four, which you would otherwise write
+The hand-rolled column is a floor, not an alternative. It is the same unified
+11 pipeline with none of the work below, and **its output does not compile**.
+The 1.26× between them is what that work costs. And `remark-math 6` is not
+fast, it is _empty_ — that column is the price of skipping every formula.
+
+What you are actually choosing is these four, which you would otherwise write
 and maintain yourself:
 
 - **Braces escaped in prose, untouched in components.** Without it the output
@@ -96,10 +100,19 @@ That last one is why this exists.
 | mdsvex + math 3 — also in the HTML | 0.006 | 0 kB       | 95         |
 | client-side KaTeX                  | 0.246 | 270 kB     | 84         |
 
-Read that honestly: skavex and mdsvex are **identical** here, because both
-render at build time. The third row is what a project ends up with after the
-maths silently fails and someone patches it with KaTeX's auto-render script.
-Core Web Vitals fails anything above `0.100`.
+Read that honestly, in two parts.
+
+**skavex and mdsvex are identical here**, because both render at build time.
+The third row is what a project ends up with after the maths silently fails and
+someone patches it with KaTeX's auto-render script.
+
+**The JavaScript column is the durable one.** 270 kB against nothing is a count
+of bytes, the same on every machine. The CLS column is not: these are
+workstation numbers, and on the CI runner — whose container has one font, so
+the KaTeX faces land after first paint — the ordering reverses, with the
+client-rendered page measuring _better_ than the server-rendered ones.
+[BENCHMARKS.md](https://git.hu-tao.dev/skavex/skavex/src/branch/main/BENCHMARKS.md)
+has both sets of numbers and why they disagree.
 
 ## Install
 
@@ -279,6 +292,14 @@ components. Two details are load-bearing, and both are tested:
   escapes text on the way out, which would turn `&#123;` into `&#x26;#123;` and
   show the reader a literal entity.
 - Escaping runs **after** KaTeX, or the annotation's braces are never seen.
+
+## Contributing
+
+Development happens on **[git.hu-tao.dev](https://git.hu-tao.dev/skavex/skavex)**;
+GitHub is a push-only mirror whose commits do not survive the next mirror push.
+Registration on the instance is closed, so opening an issue or a pull request
+takes an account or an emailed patch — [CONTRIBUTING.md](CONTRIBUTING.md) has
+both routes, and what the checks expect.
 
 ## Development
 

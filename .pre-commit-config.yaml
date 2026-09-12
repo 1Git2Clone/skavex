@@ -1,0 +1,93 @@
+# ==============================================================================
+# pre-commit — the checks that run before a commit, and again in CI
+# ==============================================================================
+# One definition, two consumers: `pre-commit install` wires these to the local
+# hooks, and .forgejo/workflows/ci.yml runs the same file with
+# `pre-commit run --all-files`. A check cannot pass locally and fail in CI
+# because of drift between lists, because there is only one list.
+#
+# The local hooks go through `nix develop -c`, NOT bare $PATH. A bare
+# `language: system` entry resolves whatever happens to be on the PATH of the
+# process invoking git, which for an editor or lazygit is not the dev shell —
+# so a different prettier or a different tsc answers, and the same commit
+# passes in one place and fails in the other. Going through the flake means one
+# pinned version answers everywhere.
+#
+#   nix develop -c pre-commit install --install-hooks -t pre-commit -t pre-push
+#   nix develop -c pre-commit run --all-files
+#
+# Generated trees are excluded globally rather than per hook: types/ is emitted
+# by tsc, docs/book/ by mdbook, demo/dist/ by vite, and none of them are edited
+# by a person.
+exclude: ^(types|docs/book|demo/dist|coverage|test-results|playwright-report)/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        # Two trailing spaces are a hard line break in markdown. Stripping them
+        # silently reflows a document, which is a content change dressed up as
+        # whitespace cleanup.
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+        # tsconfig files are JSONC — comments are part of the format, and this
+        # repo uses them to say why each compiler option is set. renovate.json5
+        # is not matched at all, being .json5.
+        exclude: ^(.*/)?tsconfig(\..*)?\.json$
+      - id: check-added-large-files
+        args: [--maxkb=512]
+
+  - repo: local
+    hooks:
+      # Prettier and ESLint on the staged files only — the whole point of a
+      # commit hook is that it is fast enough not to be disabled.
+      - id: prettier
+        name: prettier
+        description: Formatting, the same run CI makes.
+        entry: nix develop -c pnpm exec prettier --check
+        language: system
+        files: \.(js|mjs|cjs|svelte|md|json|json5|ya?ml|css|html)$
+
+      - id: eslint
+        name: eslint
+        description: Lint, including the repo-wide ban on `any`.
+        entry: nix develop -c pnpm exec eslint
+        language: system
+        files: \.(js|mjs|cjs|svelte)$
+
+      # gitleaks over a hand-rolled pattern grep: a maintained ruleset catches a
+      # token pasted anywhere, not only where someone thought to look.
+      #
+      # The whole tree rather than `git --staged`. Staged-only is the usual
+      # advice, but in CI there is nothing staged, so the hook would report
+      # Passed having scanned nothing — a green check that checks nothing is
+      # worse than no check. A full scan here takes about 70ms, which is less
+      # than the shell it runs in costs to enter, so there is nothing to buy by
+      # being clever. .gitleaks.toml excludes the trees nobody here writes.
+      - id: gitleaks
+        name: gitleaks
+        entry: nix develop -c gitleaks dir . --redact --no-banner
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Whole-project and therefore slow, so they run on push rather than on
+      # every commit. A commit hook that takes half a minute is a commit hook
+      # that gets bypassed with --no-verify, and then it protects nothing.
+      - id: types
+        name: typecheck (src, tests, benchmarks, .svelte)
+        entry: nix develop -c pnpm check
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: unit-tests
+        name: unit tests
+        entry: nix develop -c pnpm test
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

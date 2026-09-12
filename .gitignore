@@ -15,3 +15,6 @@ bench/results*.json
 *.tgz
 types/
 docs/book/
+
+# pre-commit keeps its hook environments here when HOME is not writable.
+.pre-commit-cache/

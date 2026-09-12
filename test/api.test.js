@@ -1,0 +1,79 @@
+import { describe, expect, it } from 'vitest';
+import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
+
+const require = createRequire(import.meta.url);
+const { exports: entries } = require('../package.json');
+
+/**
+ * The public API, entry point by entry point.
+ *
+ * This test exists because the surface had drifted into a list of whatever
+ * happened to be exported: `escapeText`, `findComponents`, `resolveComponentsDir`
+ * and three unified plugins sat in the main entry beside `compile`, not because
+ * anyone decided they were API but because something once needed them.
+ *
+ * A published export is a promise. Adding one here should be a decision, and
+ * this test is what makes it one — a new export fails until it is written down.
+ */
+/** @type {Record<string, string[]>} */
+const SURFACE = {
+	'.': ['compile', 'render', 'slugify'],
+	'./vite': ['skavex'],
+	// The low-level entry: the whole pipeline minus anything touching the
+	// filesystem, for a live preview, a worker or an edge runtime.
+	'./browser': [
+		'LAYOUT_IDENTIFIER',
+		'buildModule',
+		'createProcessor',
+		'referencedComponents',
+		'render',
+		'selectUsedComponents'
+	],
+	// For assembling a pipeline by hand instead of using createProcessor.
+	'./plugins': ['rehypeEscapeSvelteBraces', 'rehypeHeadings', 'remarkExtractFrontmatter'],
+	// For writing a plugin that injects a component.
+	'./utils': [
+		'componentNode',
+		'escapeTemplateLiteral',
+		'getBareLinkFromParagraph',
+		'rawHtmlExpression'
+	]
+};
+
+describe('the public API', () => {
+	it('declares exactly the entry points the surface describes', () => {
+		expect(Object.keys(entries).sort()).toEqual(Object.keys(SURFACE).sort());
+	});
+
+	// Driven by package.json rather than by SURFACE, so an entry point added to
+	// the manifest and forgotten here fails rather than going unchecked.
+	it.each(Object.entries(entries))(
+		'%s exports exactly what it promises',
+		async (entry, target) => {
+			const expected = SURFACE[entry];
+			expect(expected, `"${entry}" is published but not described in SURFACE`).toBeDefined();
+
+			const module = await import(target.default.replace('./src/', '../src/'));
+			expect(Object.keys(module).sort()).toEqual([...expected].sort());
+		}
+	);
+
+	it.each(Object.entries(entries))('%s ships the declaration file it names', (_, target) => {
+		// A types path pointing at nothing makes a consumer fall back to implicit
+		// any while every export still resolves at runtime — invisible until
+		// someone turns on `strict`.
+		//
+		// types/ is generated, not committed, so this needs `pnpm build` to have
+		// run. It has, in the two paths that matter: `prepublishOnly` builds
+		// before testing, and CI's Types step emits them before the Test step.
+		// Said out loud because "cannot find module" would otherwise read as a
+		// broken export rather than a missing prerequisite.
+		expect(
+			existsSync(new URL('../types', import.meta.url)),
+			'types/ has not been generated — run `pnpm build` first'
+		).toBe(true);
+
+		expect(() => require.resolve(`../${target.types.replace('./', '')}`)).not.toThrow();
+	});
+});

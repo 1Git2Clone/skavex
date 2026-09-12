@@ -67,19 +67,19 @@ jobs:
       - name: Install
         run: nix develop -c pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: nix develop -c pnpm lint
-
-      # The source is JavaScript and its types are the JSDoc on it, so this is
-      # the only thing that checks either. It also emits the .d.ts that ship to
-      # consumers, which is why a JSDoc mistake has to fail here rather than in
-      # somebody else's `svelte-check`.
+      # The same .pre-commit-config.yaml a contributor's commit hook runs, so a
+      # check cannot pass locally and fail here through drift between two lists.
+      # This covers prettier and eslint, plus the things `pnpm lint` does not:
+      # merge-conflict markers, oversized files, and a gitleaks scan.
       #
-      # Three passes, because one of them used to be the whole story and covered
-      # a third of the repository: the declaration build over src/, a no-emit
-      # pass over tests, benchmarks, e2e and scripts, and svelte-check over the
-      # demo. The middle one found six implicitly-`any` parameters the day it
-      # was added.
+      # PRE_COMMIT_HOME because the runner gives the job no writable HOME, and
+      # pre-commit's default cache location is under it. Same root cause as the
+      # pnpm store in .gitignore.
+      - name: Hooks
+        env:
+          PRE_COMMIT_HOME: ${{ github.workspace }}/.pre-commit-cache
+        run: nix develop -c pre-commit run --all-files --show-diff-on-failure
+
       - name: Types
         run: nix develop -c pnpm check
 

@@ -43,6 +43,11 @@
             # having, and pinning it with the rest of the toolchain means the
             # book CI builds is the book a contributor previews.
             pkgs.mdbook
+            # The hook runner. `pre-commit install` once per clone, after which
+            # .pre-commit-config.yaml is enforced on every commit; CI runs the
+            # same file, so the two cannot drift.
+            pkgs.pre-commit
+            pkgs.gitleaks
           ];
 
           # The two variables that make @playwright/test use the browsers above

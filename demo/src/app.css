@@ -40,12 +40,6 @@ header p {
 	color: var(--dim);
 }
 
-header nav {
-	margin-left: auto;
-	display: flex;
-	gap: 1rem;
-}
-
 a {
 	color: var(--accent);
 }

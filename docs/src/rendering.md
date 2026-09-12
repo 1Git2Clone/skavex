@@ -8,8 +8,13 @@ exactly as it is for a hand-written component.
 ## Server rendering
 
 The default, and the reason the library exists. A document is HTML on first
-paint: no markdown parser in the bundle, no layout shift as content appears,
-and nothing a crawler has to execute JavaScript to see.
+paint: no markdown parser in the bundle, no formula being typeset on the main
+thread while the reader waits, and nothing a crawler has to execute JavaScript
+to see.
+
+What that does _not_ promise is a better layout-shift score in every
+environment; [Benchmarks](benchmarks.md) has the measurements where it does not
+hold, and why.
 
 Nothing needs configuring for this. A `.md` import in a SvelteKit route is
 server-rendered like any other component.
