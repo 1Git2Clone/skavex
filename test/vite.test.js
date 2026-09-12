@@ -80,7 +80,7 @@ describe('the Vite plugin', () => {
 
 		expect(result.code).toContain('export const metadata =');
 		expect(result.code).toContain('"title":"Post"');
-		expect(result.code).toContain('<h2 id="heading">');
+		expect(result.code).toContain('<h2>Heading</h2>');
 		expect(result.code).toContain('katex');
 	});
 

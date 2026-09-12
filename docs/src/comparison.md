@@ -47,13 +47,17 @@ is the version trap above, not a separate limitation.
 
 ## Things that do differ
 
-|                               | skavex     | mdsvex      |
-| ----------------------------- | ---------- | ----------- |
-| unified version               | yours (11) | 8, pinned   |
-| Heading ids                   | yes        | no          |
-| `metadata.headings` for a TOC | yes        | no          |
-| Maths rendered in TOC entries | yes        | n/a         |
-| Actively developed            | yes        | maintenance |
+|                                | skavex     | mdsvex      |
+| ------------------------------ | ---------- | ----------- |
+| unified version                | yours (11) | 8, pinned   |
+| Plugins written for unified 11 | yes        | no          |
+| Actively developed             | yes        | maintenance |
+
+The first row is most of the second. mdsvex pins unified 8, so a plugin
+published in the last five years does not run in it — `rehype-slug` for heading
+ids, a table-of-contents collector, a modern highlighter, `rehype-mermaid`. On
+skavex they all do, unmodified, because the unified in the pipeline is the one
+in your lockfile. skavex ships none of them and does not need to.
 
 ## Speed
 

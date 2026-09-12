@@ -31,6 +31,7 @@ import * as internalDisclose from 'svelte/internal/disclose-version';
 import * as flagsLegacy from 'svelte/internal/flags/legacy';
 import * as flagsAsync from 'svelte/internal/flags/async';
 import * as unistUtilVisit from 'unist-util-visit';
+import * as katex from 'katex';
 
 /**
  * The runtime modules compiled output imports, keyed by the specifier the
@@ -48,8 +49,9 @@ const RUNTIME = {
 	'svelte/internal/flags/legacy': flagsLegacy,
 	'svelte/internal/flags/async': flagsAsync,
 	// Not emitted by the compiler — offered to plugins written in the editor,
-	// which need a tree walker and cannot install one.
-	'unist-util-visit': unistUtilVisit
+	// which need a tree walker and a maths renderer and cannot install either.
+	'unist-util-visit': unistUtilVisit,
+	katex
 };
 
 /** Where a generated shim module reaches the bundled runtime. */

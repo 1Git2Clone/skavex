@@ -3,6 +3,93 @@
 Notable changes per release. This file starts at 0.3.0; for 0.1.0 through
 0.2.1, `git log` is the record.
 
+## 0.4.0
+
+### Removed — headings, tables of contents, and the metadata shape
+
+skavex had a `headings` option that collected a table of contents onto
+`metadata.headings`, on by default, with a field spelled out in
+`DocumentMetadata` for it and a hand-written slugger behind it. Nothing else a
+document tree can produce got that treatment — not a reading time, not the
+outbound links, not the languages of the code blocks, not a word count, not the
+footnotes. It was one project's navigation living in the core of a library
+whose scope is unified 11 for server-rendered Svelte, LaTeX and Markdown.
+
+It is gone. Not demoted to an opt-in plugin — gone, along with `slugify` and
+`HeadingEntry`. Heading ids are
+[`rehype-slug`](https://github.com/rehypejs/rehype-slug), which does
+deduplication properly via `github-slugger`; a table of contents is a walk over
+the same tree in whatever shape your navigation needs. Both are ordinary rehype
+plugins, both are written for unified 11, and both run here unmodified — which
+is the entire reason to be on unified 11.
+
+```js
+// before
+skavex({ headings: { levels: [2, 3] } });
+
+// after
+import rehypeSlug from 'rehype-slug';
+
+skavex({ rehypePlugins: [rehypeSlug, yourTocPlugin] });
+```
+
+What skavex still contributes is the **ordering**: `rehypePlugins` runs before
+KaTeX, so a plugin reading a heading sees `$O(\log n)$` rather than
+`<span class="katex">…`. Run a slugger after KaTeX and every anchor changes
+whenever KaTeX changes its markup. That guarantee is a pipeline's to own. The
+walk is not.
+
+The playground's `contents` plugin is the replacement, editable in the browser:
+the whole feature, about forty lines, owned by the project that wants it.
+
+**Breaking:**
+
+- `headings` option: removed. Passing it warns once and is otherwise ignored —
+  an ignored option looks exactly like a working one until someone notices the
+  table of contents is empty. TypeScript callers get an excess-property error
+  instead. The warning goes away in 0.5.0.
+- `slugify`: removed from `@skavex/skavex`.
+- `rehypeHeadings` and `HeadingEntry`: removed from `@skavex/skavex/plugins`,
+  which is now the two plugins the pipeline cannot do without and nothing else.
+- `DocumentMetadata` is plain `Record<string, unknown>`. Only the project knows
+  what its own pipeline produces, so values arrive typed `unknown` and get
+  narrowed where they are consumed.
+- Headings get no ids unless you add a plugin that assigns them. Every
+  `#fragment` link into a document depends on it.
+
+There is no replacement API for any of it, and deliberately no helper for
+contributing metadata either. A plugin writes `file.data.fm`, which is vfile's
+convention rather than skavex's, spreading what is there instead of assigning
+over it. skavex writes exactly one key of its own — the document's
+frontmatter — and a plugin you write has the same standing as that.
+
+### Fixed
+
+Found by a new adversarial test suite (`test/edge-cases.test.js`) that asks what
+a real post contains that nobody thought about — a tutorial whose code samples
+are Svelte, a title that is an emoji, frontmatter that is a YAML list. Every
+payload is compiled through to the Svelte compiler, because the failures that
+matter most happen a stage after the HTML.
+
+- **Braces in HTML attributes were not escaped.** Svelte reads
+  `title="a {b} c"` as an interpolated attribute, so an image whose alt text or
+  title contained braces lost it — quietly, since an expression over an
+  undefined variable renders as nothing rather than failing. An element with a
+  braced attribute now has its tags serialised and passed through as raw markup,
+  which nothing escapes a second time. A character reference in the property
+  does not work: `hast-util-to-html` escapes `&` in an attribute value, so
+  `&#123;` would reach the page as `&#x26;#123;`. Prose, code spans and KaTeX's
+  MathML annotation were already covered; attributes were the gap.
+- **Frontmatter that is a YAML list.** `typeof [] === 'object'`, so a block of
+  `- a` spread into the metadata as `{0: 'a'}`. A non-mapping frontmatter block
+  is now ignored, as a scalar and an empty one already were.
+
+Two limitations are now pinned by tests rather than left to be discovered: a
+raw `<script>` block in a document collides with the one skavex generates and
+Svelte permits only one, and raw HTML written in uppercase (`<BR>`) is read by
+Svelte as a component tag. Neither is fixable without rewriting what the author
+wrote; both now fail against a test that says so.
+
 ## 0.3.0
 
 ### Changed — the public API is now a decision rather than a leftover

@@ -3,6 +3,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import { escapeTemplateLiteral, getBareLinkFromParagraph } from '../src/utils.js';
+import { render } from '../src/index.js';
 
 /**
  * Parse markdown the way skavex does and hand back the top-level nodes.
@@ -65,5 +66,24 @@ describe('escapeTemplateLiteral', () => {
 		expect(escaped).not.toMatch(/(^|[^\\])`/);
 		expect(escaped).not.toMatch(/(^|[^\\])\$\{/);
 		expect(eval('`' + escaped + '`')).toBe('a ` b ${c} d \\ e');
+	});
+});
+
+describe('metadata from a plugin', () => {
+	it('is a plugin writing file.data.fm, with nothing to import', async () => {
+		// The whole contract. skavex contributes the frontmatter and nothing else,
+		// a plugin spreads what is already there and adds its own, and whatever is
+		// on `file.data.fm` when the pipeline finishes is the document's metadata.
+		/** @returns {(tree: import('mdast').Root, file: import('vfile').VFile) => void} */
+		const remarkStats = () => (tree, file) => {
+			const paragraphs = tree.children.filter((node) => node.type === 'paragraph').length;
+			file.data.fm = { ...(file.data.fm ?? {}), paragraphs };
+		};
+
+		const { metadata } = await render('---\ntitle: Post\n---\n\none\n\ntwo\n', {
+			remarkPlugins: [remarkStats]
+		});
+
+		expect(metadata).toEqual({ title: 'Post', paragraphs: 2 });
 	});
 });

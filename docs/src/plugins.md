@@ -59,8 +59,9 @@ the template literal.
 
 ## Adding to the metadata
 
-Any plugin may write to `file.data.fm`, and whatever is there is exported as
-`metadata`:
+`metadata` is an open object with nothing of skavex's own in it but the
+document's frontmatter. Write `file.data.fm` — vfile's convention, and there is
+nothing to import for it — and whatever you put there is exported:
 
 ```js
 export function remarkReadingTime() {
@@ -69,6 +70,14 @@ export function remarkReadingTime() {
 	};
 }
 ```
+
+Spread what is there rather than assigning over it. A plugin does not know what
+ran before it, so an assignment discards the author's frontmatter whenever it
+happens to run second.
+
+This is how every metadata key gets there. skavex writes exactly one of its
+own — the document's frontmatter — and a plugin you write has the same standing
+as that. Later writers win, so ordering decides who owns a contested key.
 
 ## Giving markdown a syntax it does not have
 

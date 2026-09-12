@@ -127,8 +127,10 @@ test('renders the sample document with maths on load', async ({ page }) => {
 });
 
 test('gives headings ids derived from prose, not from KaTeX markup', async ({ page }) => {
-	// The heading's text is "Why $O(n \log \log n)$?" — if ids were assigned
-	// after KaTeX ran, this would be a slug of <span class="katex">.
+	// Done by the workspace's own `contents` plugin, not by skavex — but it only
+	// works because `rehypePlugins` runs before KaTeX. The heading's text is
+	// "Why $O(n \log \log n)$?"; assigned after KaTeX ran, this would be a slug
+	// of <span class="katex">.
 	const heading = page.locator('.prose h2').first();
 
 	await expect(heading).toHaveAttribute('id', /^why-on/);
@@ -255,9 +257,10 @@ test('collects frontmatter and a table of contents that renders its maths', asyn
 
 	await expect(page.locator('pre.code')).toContainText('"title": "Sieve of Eratosthenes"');
 
-	// Navigation shows the formula rather than its LaTeX source — the same KaTeX
-	// options as the body, so the maths is not silent in the one place a reader
-	// uses to move around the document.
+	// Navigation shows the formula rather than its LaTeX source, because the
+	// `contents` plugin renders it with the same KaTeX the body uses. The whole
+	// table of contents is a forty-line plugin in the file tree, which is the
+	// point being demonstrated: skavex ships no such feature and does not need to.
 	// One per heading in the sample: Why…, Comparison, Components, Plugins.
 	const entries = page.locator('.toc li');
 	await expect(entries).toHaveCount(4);

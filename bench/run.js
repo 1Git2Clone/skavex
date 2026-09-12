@@ -36,12 +36,12 @@ const GUARANTEES = {
 	// not to defend a lead that is inside the noise either way.
 	minSpeedRatioVsWorkingMdsvex: 0.9,
 
-	// The bare pipeline is a floor rather than a rival: it collects no headings,
-	// renders no table of contents, escapes no prose, and its output does not
-	// compile. skavex costs more than it by design, and this is the number worth
-	// watching — the price of those features, which should not quietly creep up.
+	// The bare pipeline is a floor rather than a rival: it escapes no prose,
+	// resolves no components, and its output does not compile. skavex costs more
+	// than it by design, and this is the number worth watching — the price of
+	// those features, which should not quietly creep up.
 	//
-	// Measured across five runs at 1.17x to 1.47x, so the ceiling clears the top
+	// Measured across five runs at 1.29x to 1.37x, so the ceiling clears the top
 	// of that range rather than sitting on it. A gate that a clean checkout
 	// fails one time in five teaches people to rerun the job, not to read it.
 	maxOverheadVsBarePipeline: 1.8,
@@ -50,8 +50,11 @@ const GUARANTEES = {
 	// something that silently did not happen in a real project.
 	skavex: {
 		katex: 46,
-		mathml: 16,
-		headingIds: 3,
+		// 15, not 16: the extra MathML block used to be a formula rendered a second
+		// time into a table-of-contents entry, by a collector skavex no longer
+		// ships. The bare pipeline emits 15 too, which is the point — skavex's
+		// maths output is unified 11's maths output.
+		mathml: 15,
 		escapesProse: true,
 		keepsComponents: true,
 		compiles: true
@@ -134,7 +137,6 @@ function table(report) {
 			`${Math.round(result.docsPerSecond)}/s`,
 			f.katex ? `yes (${f.katex})` : '**no**',
 			f.mathml ? `yes (${f.mathml})` : '**no**',
-			f.headingIds ? `yes (${f.headingIds})` : 'no',
 			f.escapesProse ? 'yes' : 'no',
 			f.keepsComponents ? 'yes' : 'no',
 			f.compiles ? 'yes' : '**no**'
@@ -147,7 +149,6 @@ function table(report) {
 		'Throughput',
 		'KaTeX',
 		'MathML',
-		'Heading ids',
 		'Escapes prose',
 		'Keeps components',
 		'Compiles'
@@ -247,7 +248,7 @@ const bareResult = report.results.find((result) => result.id === 'bare');
 if (skavexResult && bareResult) {
 	console.log(
 		`skavex costs ${(skavexResult.msPerDoc / bareResult.msPerDoc).toFixed(2)}x the bare ` +
-			`pipeline, for heading data, a rendered table of contents and output that compiles.`
+			`pipeline, for escaped prose, resolved components and output that compiles.`
 	);
 }
 

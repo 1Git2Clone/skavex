@@ -10,7 +10,6 @@ import { compile as svelteCompile } from 'svelte/compiler';
  * @typedef {object} Features
  * @property {number} katex       KaTeX spans in the output. 0 means the maths silently did not render.
  * @property {number} mathml      MathML nodes — what a screen reader reads. 0 means the maths is invisible to one.
- * @property {number} headingIds  Headings given an id, i.e. anchors and a usable table of contents.
  * @property {boolean} escapesProse   Braces in prose neutralised for the Svelte compiler.
  * @property {boolean} keepsComponents A bare `<Counter />` tag survived into the output.
  * @property {boolean} compiles   The Svelte compiler accepts the result.
@@ -37,7 +36,6 @@ export function features(output) {
 	return {
 		katex: count(/class="katex/g),
 		mathml: count(/katex-mathml/g),
-		headingIds: count(/<h[1-6] id=/g),
 		escapesProse: output.includes('&#123;braces&#125;'),
 		keepsComponents: /<Counter /.test(output),
 		compiles

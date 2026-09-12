@@ -17,7 +17,7 @@ const { exports: entries } = require('../package.json');
  */
 /** @type {Record<string, string[]>} */
 const SURFACE = {
-	'.': ['compile', 'render', 'slugify'],
+	'.': ['compile', 'render'],
 	'./vite': ['skavex'],
 	// The low-level entry: the whole pipeline minus anything touching the
 	// filesystem, for a live preview, a worker or an edge runtime.
@@ -29,9 +29,12 @@ const SURFACE = {
 		'render',
 		'selectUsedComponents'
 	],
-	// For assembling a pipeline by hand instead of using createProcessor.
-	'./plugins': ['rehypeEscapeSvelteBraces', 'rehypeHeadings', 'remarkExtractFrontmatter'],
-	// For writing a plugin that injects a component.
+	// The two the pipeline cannot do without, for assembling one by hand.
+	// Nothing else belongs here: a table of contents, heading ids and syntax
+	// highlighting are remark and rehype plugins, and the ecosystem has them.
+	'./plugins': ['rehypeEscapeSvelteBraces', 'remarkExtractFrontmatter'],
+	// For writing a plugin that injects a component. Nothing for metadata: a
+	// plugin writes `file.data.fm`, which is vfile's convention, not an API here.
 	'./utils': [
 		'componentNode',
 		'escapeTemplateLiteral',

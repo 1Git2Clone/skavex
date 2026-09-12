@@ -66,8 +66,7 @@ describe('server rendering', () => {
 	it('renders prose to HTML with no client-side work', async () => {
 		const body = await renderMarkdownOnServer('# Title\n\nSome **bold** prose.');
 
-		// Headings carry ids by default; see the headings option.
-		expect(body).toContain('<h1 id="title">Title</h1>');
+		expect(body).toContain('<h1>Title</h1>');
 		expect(body).toContain('<strong>bold</strong>');
 	});
 

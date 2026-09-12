@@ -134,6 +134,70 @@ export const COMPONENTS = [
  */
 export const PLUGINS = [
 	{
+		name: 'contents',
+		source: `import { visit } from 'unist-util-visit';
+import katex from 'katex';
+
+// Runs on the HTML tree, before KaTeX — so a heading still reads as the prose
+// the author wrote rather than as <span class="katex">.
+export const stage = 'rehype';
+
+const slug = (text) =>
+	text
+		.toLowerCase()
+		.trim()
+		.replace(/\\s+/g, '-')
+		.replace(/[^\\w-]+/g, '')
+		.replace(/-+/g, '-');
+
+const textOf = (node) =>
+	node.type === 'text' ? node.value : (node.children ?? []).map(textOf).join('');
+
+/**
+ * Give headings ids and collect them onto metadata.headings.
+ *
+ * skavex does not do this, on purpose: a table of contents is one of a hundred
+ * things a document tree can be asked for, and the shape yours needs is not the
+ * shape anyone else's does. It is a rehype plugin, and this is all of it —
+ * edit it, and the panel on the right changes.
+ */
+export default function rehypeContents() {
+	return (tree, file) => {
+		const headings = [];
+		const taken = new Set();
+
+		visit(tree, 'element', (node) => {
+			const level = Number(/^h([1-6])$/.exec(node.tagName)?.[1]);
+			if (!level) return;
+
+			const text = textOf(node);
+			let id = slug(text) || 'heading';
+			for (let n = 1; taken.has(id); n++) id = slug(text) + '-' + n;
+			taken.add(id);
+
+			node.properties.id = id;
+			headings.push({
+				id,
+				level,
+				text,
+				// Maths rendered the same way the body renders it, so a formula
+				// reads the same in the sidebar as in the prose.
+				html: (node.children ?? [])
+					.map((child) =>
+						child.type === 'element' && child.properties?.className?.includes?.('math-inline')
+							? katex.renderToString(textOf(child), { throwOnError: false })
+							: textOf(child)
+					)
+					.join('')
+			});
+		});
+
+		file.data.fm = { ...(file.data.fm ?? {}), headings };
+	};
+}
+`
+	},
+	{
 		name: 'highlight',
 		source: `import { visit } from 'unist-util-visit';
 

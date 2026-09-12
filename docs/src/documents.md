@@ -16,9 +16,12 @@ Crossing out the multiples of each prime $p \le \sqrt{n}$ costs $n/p$ writes.
 
 ## Metadata
 
-Frontmatter is parsed into `file.data.fm` and exported as `metadata`. Any
-plugin may add to the same object, which is how a table of contents or a
-reading time ends up on the export:
+`metadata` is an open object, and skavex puts nothing of its own in it.
+Frontmatter is one contributor; a plugin is another. What a document exports is
+whatever the pipeline left there.
+
+A plugin writes `file.data.fm`, which is vfile's convention rather than an API
+of skavex's — there is nothing to import:
 
 ```js
 export function remarkReadingTime() {
@@ -28,61 +31,82 @@ export function remarkReadingTime() {
 }
 ```
 
-## Maths
+Spread what is there rather than assigning over it. That is the whole of the
+etiquette, and the reason is that a plugin does not know what ran before it —
+assign, and you discard the author's frontmatter whenever you happen to run
+second.
 
-Maths renders as **HTML and MathML** by default. HTML alone looks correct and
-is completely silent to a screen reader, which makes maths-heavy writing
-unreadable for anyone using one.
+A document tree can be asked for a great deal: a table of contents, a reading
+time, the outbound links, the languages of the code blocks, a word count, the
+first image, the footnotes. None of it is skavex's to decide or to implement.
+Remark and rehype exist for exactly this, the ecosystem is full of plugins
+that already do it, and being on unified 11 is what lets you use them.
 
-| `math.output`     | Result                                               |
-| ----------------- | ---------------------------------------------------- |
-| `'htmlAndMathml'` | Default. Looks identical everywhere, readable by AT. |
-| `'html'`          | Visual only. Silent to assistive technology.         |
-| `'mathml'`        | Native browser rendering. Much smaller.              |
+Because the shape is the project's, values arrive typed `unknown`. Narrow them
+where they are consumed:
 
-`math: { output: 'mathml' }` is worth knowing about: it drops KaTeX's HTML and
-leaves only the MathML, which every current browser renders natively. On the
-benchmark corpus that is **half the build time and a quarter of the page
-weight** — 5.7 kB against 21 kB of HTML. It is not the default because KaTeX's
-HTML looks the same regardless of which maths fonts a reader has, but for a
-maths-heavy site it is the first thing to try.
+```ts
+const headings = metadata.headings as TocEntry[] | undefined;
+```
 
 ## Headings and tables of contents
 
-Every heading gets an `id`, and all of them are collected onto
-`metadata.headings`:
+skavex does not do this, and that is the answer rather than an omission. Heading
+ids are [`rehype-slug`](https://github.com/rehypejs/rehype-slug), which handles
+deduplication properly through `github-slugger`. A table of contents is a walk
+over the same tree in whatever shape your navigation needs:
 
 ```js
-{
-  id: 'olog-n-logarithmic-complexity',
-  level: 3,
-  text: 'O(\\log n) - Logarithmic Complexity',    // maths as its LaTeX source
-  html: '<span class="katex">…</span> - Logarithmic Complexity'
+import rehypeSlug from 'rehype-slug';
+import { visit } from 'unist-util-visit';
+import { toString } from 'hast-util-to-string';
+
+function rehypeToc() {
+	return (tree, file) => {
+		const toc = [];
+		visit(tree, 'element', (node) => {
+			const level = Number(/^h([1-6])$/.exec(node.tagName)?.[1]);
+			if (level) toc.push({ id: node.properties.id, level, text: toString(node) });
+		});
+		file.data.fm = { ...(file.data.fm ?? {}), toc };
+	};
 }
+
+skavex({ rehypePlugins: [rehypeSlug, rehypeToc] });
 ```
 
-Two things this exists to get right, both easy to get wrong by hand.
+**What skavex contributes is the ordering.** `rehypePlugins` runs _before_
+KaTeX, so a heading still reads as `$O(\log n)$ - Logarithmic Complexity`
+rather than as `<span class="katex">…`. Run a slugger after KaTeX and the id is
+built from KaTeX's markup, changing whenever KaTeX's output does, silently
+breaking every anchor anyone has shared. That guarantee is the part a library
+can usefully own; the walk is not.
 
-**The id comes from the prose, not from KaTeX.** Collection runs _before_
-KaTeX, so `### $O(\log n)$ - Logarithmic Complexity` slugifies from the LaTeX
-source. Do it afterwards and the slug is built from `<span class="katex">…`,
-which changes whenever KaTeX's output does — silently breaking every anchor
-anyone has shared.
+Earlier versions shipped a `rehypeHeadings` plugin of their own. It was one
+project's table of contents living in the core of a library whose scope is
+unified 11, Svelte, LaTeX and Markdown — and a hand-written slugger that needed
+bugs fixed into it to approximate what `github-slugger` already did. The
+playground's `contents` plugin is the replacement, editable in the browser: it
+is the whole feature, in about forty lines, owned by the project that wants it.
 
-**One `slugify`, used on both sides.** A heading's `id` and a table of
-contents' `href` are produced at different times, so a project that
-reimplements the slug for its navigation keeps two copies that must agree
-forever. They will not:
+## What a document cannot contain
 
-```js
-import { slugify } from '@skavex/skavex';
-```
+Two things, both because a document becomes a real Svelte component rather than
+a string of HTML:
 
-`html` renders maths with the same KaTeX options as the body, so a formula
-looks — and reads, to a screen reader — the same in the sidebar as in the text.
+**A raw `<script>` block.** Svelte permits one instance script per component and
+skavex generates it, so an author's collides with it. skavex does not hoist or
+merge the two. A document that needs behaviour should use a component, which is
+the thing components are for.
 
-skavex owns `metadata.headings` while this is on. A project wanting its own
-shape sets `headings: false` and writes a plugin.
+**Raw HTML written in uppercase.** `<BR>` and `<IMG>` are legal HTML, but
+Svelte's rule is that a capitalised tag is a component — so it is not void, it
+swallows what follows it, and the enclosing paragraph fails to close. Write
+`<br>`. Nothing can be done about this without rewriting the markup an author
+wrote, which is worse.
+
+Both fail loudly, at compile time, with a Svelte error. Neither can corrupt a
+page quietly.
 
 ## Braces
 

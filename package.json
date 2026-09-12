@@ -1,6 +1,6 @@
 {
 	"name": "@skavex/skavex",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "Server-rendered Markdown + LaTeX for Svelte. A Vite plugin that compiles .md into real Svelte components.",
 	"keywords": [
 		"svelte",
@@ -80,6 +80,7 @@
 		"demo:build": "vite build --config demo/vite.config.js demo"
 	},
 	"dependencies": {
+		"hast-util-to-html": "^9.0.5",
 		"katex": "^0.18.7",
 		"rehype-katex": "^7.0.1",
 		"rehype-stringify": "^10.0.1",
@@ -115,12 +116,14 @@
 		"eslint-plugin-jsdoc": "^64.3.9",
 		"eslint-plugin-svelte": "^3.23.0",
 		"globals": "^17.12.0",
+		"hast-util-to-string": "^3.0.1",
 		"lighthouse": "^13.4.1",
 		"mdsvex": "^0.12.8",
 		"prettier": "^3.9.6",
 		"prettier-plugin-svelte": "^4.1.1",
 		"rehype-external-links": "^3.0.0",
 		"rehype-katex-legacy": "npm:rehype-katex@^3.1.0",
+		"rehype-slug": "^6.0.0",
 		"remark-directive": "^4.0.0",
 		"remark-math-legacy": "npm:remark-math@^3.0.1",
 		"svelte": "^5.57.0",

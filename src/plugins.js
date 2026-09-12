@@ -1,22 +1,27 @@
 /**
- * The unified plugins skavex is built from.
+ * The two unified plugins skavex cannot do without.
  *
- * A separate entry point because these are for one job: assembling a pipeline
- * by hand, when {@link import('./browser.js').createProcessor} does not arrange
- * things the way you need. Most projects never import from here — the Vite
- * plugin and `compile` already run all three in the order they have to run in,
- * and that order is the awkward part.
+ * Both are already in the pipeline `createProcessor` builds. They are exported
+ * for the one case that needs them — assembling a processor by hand, when
+ * `createProcessor` does not arrange things the way you need — and a project
+ * using the Vite plugin never imports from here.
  *
- * If you do build your own: `rehypeHeadings` must run BEFORE KaTeX, or ids are
- * derived from KaTeX's markup instead of the prose, and
+ * There is nothing else, deliberately. skavex is unified 11 for server-rendered
+ * Svelte, LaTeX and Markdown; a table of contents, a reading time, syntax
+ * highlighting and everything else a document tree can be asked for are what
+ * remark and rehype are for, and the ecosystem already has them. Anything
+ * written for unified 11 works here unmodified, which is the point of being on
+ * unified 11.
+ *
+ * Two orderings matter if you assemble the pipeline yourself. Anything reading
+ * an element's text — `rehype-slug`, a table-of-contents collector — must run
+ * BEFORE KaTeX, or it reads KaTeX's markup instead of the prose. And
  * `rehypeEscapeSvelteBraces` must run LAST, after every plugin that injects
- * markup, or it will escape braces belonging to a component tag.
+ * markup, or it escapes braces belonging to a component tag. The `rehypePlugins`
+ * option already sits between the two.
  *
  * @module
  */
 
-export { rehypeHeadings } from './headings.js';
 export { remarkExtractFrontmatter } from './frontmatter.js';
 export { rehypeEscapeSvelteBraces } from './escape.js';
-
-/** @typedef {import('./headings.js').HeadingEntry} HeadingEntry */

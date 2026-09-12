@@ -5,6 +5,10 @@
  * emits a component re-derives the same two things — how to escape a template
  * literal, and how to recognise a paragraph that is nothing but a link — and
  * getting either subtly wrong produces markup that fails to compile.
+ *
+ * Metadata is not here, and there is nothing to import for it: a plugin writes
+ * `file.data.fm`, which is vfile's convention rather than skavex's, and
+ * whatever is on it is exported as the document's `metadata`.
  */
 
 /**

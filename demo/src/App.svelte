@@ -171,7 +171,14 @@
 		return () => style.remove();
 	});
 
-	const headings = $derived(output.metadata.headings ?? []);
+	// Contributed by the `contents` plugin in the file tree, not by skavex —
+	// which is why the shape is named here, by the thing consuming it, rather
+	// than by the library. Delete that plugin and this list empties.
+	const headings = $derived(
+		/** @type {{id: string, level: number, text: string, html: string}[]} */ (
+			output.metadata.headings ?? []
+		)
+	);
 	const focusedComponent = $derived(
 		components.find((file) => `components/${file.name}.svelte` === focused)
 	);
