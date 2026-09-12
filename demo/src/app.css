@@ -70,6 +70,12 @@ body {
 main {
 	display: grid;
 	grid-template-columns: auto 1fr 1fr;
+	/* minmax(0, 1fr), not 1fr. An implicit `auto` row is sized by its tallest
+	   item, and the panes contain a textarea holding a whole document — so the
+	   row grew to the content's height (1086px in a 720px viewport), spilled out
+	   of main, and was clipped by body's overflow. Everything below the fold
+	   then existed, had a real bounding box, and could not be clicked. */
+	grid-template-rows: minmax(0, 1fr);
 	gap: 1px;
 	background: var(--line);
 	flex: 1;
@@ -90,6 +96,11 @@ main {
 
 	main {
 		grid-template-columns: 1fr;
+	}
+
+	main {
+		/* Stacked, each pane gets its own height and the page scrolls. */
+		grid-template-rows: none;
 	}
 
 	.pane {
@@ -114,6 +125,9 @@ main {
 	display: flex;
 	flex-direction: column;
 	min-width: 0;
+	/* A grid item defaults to min-height: auto, which refuses to shrink below
+	   its content — the same reason the row overflowed above. */
+	min-height: 0;
 	background: var(--bg);
 }
 
