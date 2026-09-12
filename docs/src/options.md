@@ -35,13 +35,13 @@ rewrites formulas.
 Five entry points, tiered by how close to the library's internals you need to
 get. Most projects use the first two and never the rest.
 
-| Specifier                | Exports                                                                                                         | For                                                             |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `@skavex/skavex/vite`    | `skavex`                                                                                                        | What a site configures.                                         |
-| `@skavex/skavex`         | `compile`, `render`                                                                                             | Rendering a document outside a Vite build.                      |
-| `@skavex/skavex/browser` | `render`, `createProcessor`, `buildModule`, `selectUsedComponents`, `referencedComponents`, `LAYOUT_IDENTIFIER` | A live preview, a worker, an edge runtime.                      |
-| `@skavex/skavex/plugins` | `remarkExtractFrontmatter`, `rehypeEscapeSvelteBraces`                                                          | Assembling a pipeline by hand.                                  |
-| `@skavex/skavex/utils`   | `setMetadata`, `componentNode`, `rawHtmlExpression`, `escapeTemplateLiteral`, `getBareLinkFromParagraph`        | Writing a plugin: contributing metadata, injecting a component. |
+| Specifier                | Exports                                                                                                         | For                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `@skavex/skavex/vite`    | `skavex`                                                                                                        | What a site configures.                    |
+| `@skavex/skavex`         | `compile`, `render`                                                                                             | Rendering a document outside a Vite build. |
+| `@skavex/skavex/browser` | `render`, `createProcessor`, `buildModule`, `selectUsedComponents`, `referencedComponents`, `LAYOUT_IDENTIFIER` | A live preview, a worker, an edge runtime. |
+| `@skavex/skavex/plugins` | `remarkExtractFrontmatter`, `rehypeEscapeSvelteBraces`                                                          | Assembling a pipeline by hand.             |
+| `@skavex/skavex/utils`   | `componentNode`, `rawHtmlExpression`, `escapeTemplateLiteral`, `getBareLinkFromParagraph`                       | Writing a plugin that injects a component. |
 
 `compile` is the only thing here that reads from disk, which is the whole
 difference between the main entry and `/browser`.

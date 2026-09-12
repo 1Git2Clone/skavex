@@ -20,18 +20,21 @@ Crossing out the multiples of each prime $p \le \sqrt{n}$ costs $n/p$ writes.
 Frontmatter is one contributor; a plugin is another. What a document exports is
 whatever the pipeline left there.
 
-`setMetadata` is the entire contract — it merges, so a plugin cannot erase what
-ran before it:
+A plugin writes `file.data.fm`, which is vfile's convention rather than an API
+of skavex's — there is nothing to import:
 
 ```js
-import { setMetadata } from '@skavex/skavex/utils';
-
 export function remarkReadingTime() {
 	return (tree, file) => {
-		setMetadata(file, { readingTime: estimate(tree) });
+		file.data.fm = { ...(file.data.fm ?? {}), readingTime: estimate(tree) };
 	};
 }
 ```
+
+Spread what is there rather than assigning over it. That is the whole of the
+etiquette, and the reason is that a plugin does not know what ran before it —
+assign, and you discard the author's frontmatter whenever you happen to run
+second.
 
 A document tree can be asked for a great deal: a table of contents, a reading
 time, the outbound links, the languages of the code blocks, a word count, the
@@ -57,7 +60,6 @@ over the same tree in whatever shape your navigation needs:
 import rehypeSlug from 'rehype-slug';
 import { visit } from 'unist-util-visit';
 import { toString } from 'hast-util-to-string';
-import { setMetadata } from '@skavex/skavex/utils';
 
 function rehypeToc() {
 	return (tree, file) => {
@@ -66,7 +68,7 @@ function rehypeToc() {
 			const level = Number(/^h([1-6])$/.exec(node.tagName)?.[1]);
 			if (level) toc.push({ id: node.properties.id, level, text: toString(node) });
 		});
-		setMetadata(file, { toc });
+		file.data.fm = { ...(file.data.fm ?? {}), toc };
 	};
 }
 

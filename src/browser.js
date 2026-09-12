@@ -69,9 +69,9 @@ import { rehypeEscapeSvelteBraces } from './escape.js';
  * but the document's own frontmatter — a document tree can be asked for a table
  * of contents, a reading time, its outbound links, the languages of its code
  * blocks, a word count, and none of that is skavex's to decide or to implement.
- * Remark and rehype exist for it. Plugins merge in what a project actually
- * needs, through {@link import('./utils.js').setMetadata}, and all of it is
- * exported as the document's `metadata`.
+ * Remark and rehype exist for it. A plugin merges what a project actually needs
+ * into `file.data.fm` — vfile's convention, not an API of skavex's — and all of
+ * it is exported as the document's `metadata`.
  *
  * The consequence is that values arrive typed `unknown`, because only the
  * project knows what its own pipeline produces. Narrow it where you consume it:

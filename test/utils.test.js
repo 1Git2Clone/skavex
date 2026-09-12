@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
-import { escapeTemplateLiteral, getBareLinkFromParagraph, setMetadata } from '../src/utils.js';
+import { escapeTemplateLiteral, getBareLinkFromParagraph } from '../src/utils.js';
 import { render } from '../src/index.js';
-import { VFile } from 'vfile';
 
 /**
  * Parse markdown the way skavex does and hand back the top-level nodes.
@@ -70,32 +69,15 @@ describe('escapeTemplateLiteral', () => {
 	});
 });
 
-describe('setMetadata', () => {
-	it('merges rather than assigns, so a plugin cannot erase what ran before it', () => {
-		const file = new VFile();
-		file.data.fm = { title: 'Post' };
-
-		setMetadata(file, { readingTime: 4 });
-
-		expect(file.data.fm).toEqual({ title: 'Post', readingTime: 4 });
-	});
-
-	it('works on a file nothing has written to yet', () => {
-		const file = new VFile();
-
-		setMetadata(file, { tags: ['a'] });
-
-		expect(file.data.fm).toEqual({ tags: ['a'] });
-	});
-
-	it("is all a plugin needs to put anything on a document's metadata", async () => {
-		// The generic mechanism, end to end: skavex names no metadata key of its
-		// own, and whatever a plugin contributes here is what the document exports.
+describe('metadata from a plugin', () => {
+	it('is a plugin writing file.data.fm, with nothing to import', async () => {
+		// The whole contract. skavex contributes the frontmatter and nothing else,
+		// a plugin spreads what is already there and adds its own, and whatever is
+		// on `file.data.fm` when the pipeline finishes is the document's metadata.
 		/** @returns {(tree: import('mdast').Root, file: import('vfile').VFile) => void} */
 		const remarkStats = () => (tree, file) => {
-			setMetadata(file, {
-				paragraphs: tree.children.filter((n) => n.type === 'paragraph').length
-			});
+			const paragraphs = tree.children.filter((node) => node.type === 'paragraph').length;
+			file.data.fm = { ...(file.data.fm ?? {}), paragraphs };
 		};
 
 		const { metadata } = await render('---\ntitle: Post\n---\n\none\n\ntwo\n', {

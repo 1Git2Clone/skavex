@@ -59,22 +59,21 @@ the template literal.
 
 ## Adding to the metadata
 
-`metadata` is an open object with nothing of skavex's own in it. Call
-`setMetadata` and whatever you put there is exported:
+`metadata` is an open object with nothing of skavex's own in it but the
+document's frontmatter. Write `file.data.fm` — vfile's convention, and there is
+nothing to import for it — and whatever you put there is exported:
 
 ```js
-import { setMetadata } from '@skavex/skavex/utils';
-
 export function remarkReadingTime() {
 	return (tree, file) => {
-		setMetadata(file, { readingTime: estimate(tree) });
+		file.data.fm = { ...(file.data.fm ?? {}), readingTime: estimate(tree) };
 	};
 }
 ```
 
-It merges rather than assigns, which matters because a plugin does not know
-what ran before it. `file.data.fm = {...}` is the same operation minus that
-guarantee, and discards the author's frontmatter whenever it runs second.
+Spread what is there rather than assigning over it. A plugin does not know what
+ran before it, so an assignment discards the author's frontmatter whenever it
+happens to run second.
 
 This is how every metadata key gets there. skavex writes exactly one of its
 own — the document's frontmatter — and a plugin you write has the same standing

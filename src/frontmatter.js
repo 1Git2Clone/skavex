@@ -1,18 +1,18 @@
 import { visit } from 'unist-util-visit';
 import { parse as parseYaml } from 'yaml';
 
-import { setMetadata } from './utils.js';
-
 /**
  * Remark plugin that lifts the YAML frontmatter block into `file.data.fm`.
  *
  * `remark-frontmatter` only teaches the parser to recognise the block; it does
- * not interpret it. This reads that node and merges the result into the
- * document's metadata via {@link import('./utils.js').setMetadata}.
+ * not interpret it. This reads that node and merges the result into
+ * `file.data.fm`, which is vfile's convention for a document's own data.
  *
- * Frontmatter is a contributor to that object, not the owner of it: any plugin
- * may merge in its own keys the same way, and every key ends up on the
- * document's exported `metadata`.
+ * Frontmatter is a contributor to that object, not the owner of it. Any plugin
+ * may merge in its own keys the same way — spread what is there, add yours —
+ * and every key ends up on the document's exported `metadata`. Merging rather
+ * than assigning is the whole of the etiquette, and the reason for it is that
+ * a plugin does not know what ran before it.
  *
  * The `yaml` node is left in the tree. `remark-rehype` has no handler for it,
  * so it is dropped on the way to HTML and never reaches the page.
@@ -31,7 +31,8 @@ export function remarkExtractFrontmatter() {
 			// `{0: 'a'}`, which is nobody's intent and hard to trace back.
 			if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return;
 
-			setMetadata(file, /** @type {Record<string, unknown>} */ (parsed));
+			const existing = /** @type {Record<string, unknown>} */ (file.data.fm ?? {});
+			file.data.fm = { ...existing, ...parsed };
 		});
 	};
 }

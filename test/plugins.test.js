@@ -5,7 +5,7 @@ import rehypeExternalLinks from 'rehype-external-links';
 import rehypeSlug from 'rehype-slug';
 import { toString } from 'hast-util-to-string';
 import { compile, render } from '../src/index.js';
-import { componentNode, setMetadata } from '../src/utils.js';
+import { componentNode } from '../src/utils.js';
 
 /**
  * Turn `:::note` into a `<Callout>` component.
@@ -88,9 +88,9 @@ describe('third-party rehype plugins', () => {
 
 	it('collects a table of contents, in about as many lines as it takes to say so', async () => {
 		// The other half of what was removed, written here in full. This is the
-		// entire feature: a walk, a shape the project chose, one write to the
-		// metadata. There is nothing skavex could add to it that would not be a
-		// guess about what somebody else's navigation needs.
+		// entire feature: a walk, a shape the project chose, one write to
+		// `file.data.fm`. There is nothing skavex could add to it that would not
+		// be a guess about what somebody else's navigation needs.
 		/** @returns {(tree: import('hast').Root, file: import('vfile').VFile) => void} */
 		const rehypeToc = () => (tree, file) => {
 			/** @type {{id: string, level: number, text: string}[]} */
@@ -100,7 +100,7 @@ describe('third-party rehype plugins', () => {
 				if (level)
 					toc.push({ id: String(node.properties.id), level, text: toString(node) });
 			});
-			setMetadata(file, { toc });
+			file.data.fm = { ...(file.data.fm ?? {}), toc };
 		};
 
 		const { metadata } = await render('## Why $O(n)$ matters\n\n### Detail\n', {

@@ -57,14 +57,11 @@ the whole feature, about forty lines, owned by the project that wants it.
 - Headings get no ids unless you add a plugin that assigns them. Every
   `#fragment` link into a document depends on it.
 
-### Added
-
-- **`setMetadata(file, values)`** in `@skavex/skavex/utils` — the whole of the
-  metadata contract, made explicit. Merges rather than assigns, so a plugin
-  cannot erase what ran before it; `file.data.fm = {...}` is the same operation
-  minus that guarantee, and discards frontmatter whenever it runs second.
-  skavex writes exactly one key of its own now, the document's frontmatter, and
-  a plugin you write has the same standing as that.
+There is no replacement API for any of it, and deliberately no helper for
+contributing metadata either. A plugin writes `file.data.fm`, which is vfile's
+convention rather than skavex's, spreading what is there instead of assigning
+over it. skavex writes exactly one key of its own — the document's
+frontmatter — and a plugin you write has the same standing as that.
 
 ### Fixed
 

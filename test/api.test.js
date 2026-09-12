@@ -33,13 +33,13 @@ const SURFACE = {
 	// Nothing else belongs here: a table of contents, heading ids and syntax
 	// highlighting are remark and rehype plugins, and the ecosystem has them.
 	'./plugins': ['rehypeEscapeSvelteBraces', 'remarkExtractFrontmatter'],
-	// For writing a plugin: contributing metadata, injecting a component.
+	// For writing a plugin that injects a component. Nothing for metadata: a
+	// plugin writes `file.data.fm`, which is vfile's convention, not an API here.
 	'./utils': [
 		'componentNode',
 		'escapeTemplateLiteral',
 		'getBareLinkFromParagraph',
-		'rawHtmlExpression',
-		'setMetadata'
+		'rawHtmlExpression'
 	]
 };
 

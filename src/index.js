@@ -14,8 +14,8 @@
  *   filesystem, for a live preview, a worker or an edge runtime.
  * - `@skavex/skavex/plugins` — the two plugins the pipeline cannot do without,
  *   for assembling a processor by hand.
- * - `@skavex/skavex/utils` — helpers for writing a plugin: contributing
- *   metadata, injecting a component.
+ * - `@skavex/skavex/utils` — helpers for writing a plugin that injects a
+ *   component.
  *
  * @module
  */
