@@ -1,6 +1,6 @@
 {
 	"name": "@skavex/skavex",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"description": "Server-rendered Markdown + LaTeX for Svelte. A Vite plugin that compiles .md into real Svelte components.",
 	"keywords": [
 		"svelte",
@@ -54,6 +54,7 @@
 	"scripts": {
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"build": "rm -rf types && tsc -p tsconfig.json",
@@ -97,6 +98,7 @@
 		"@types/hast": "^3.0.5",
 		"@types/mdast": "^4.0.4",
 		"@types/node": "^22.20.2",
+		"@vitest/coverage-v8": "^4.1.11",
 		"eslint": "^10.10.0",
 		"eslint-config-prettier": "^10.1.8",
 		"globals": "^17.12.0",

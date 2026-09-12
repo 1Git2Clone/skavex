@@ -1,5 +1,18 @@
 # skavex
 
+[![CI Icon]][CI Status]&emsp;[![Coverage Icon]][Coverage Status]&emsp;[![npm Icon]][npm Status]&emsp;[![Demo Icon]][Demo]&emsp;[![License Icon]][License]
+
+[CI Icon]: https://git.hu-tao.dev/skavex/skavex/badges/workflows/ci.yml/badge.svg
+[CI Status]: https://git.hu-tao.dev/skavex/skavex/actions
+[Coverage Icon]: https://img.shields.io/endpoint?url=https%3A%2F%2Fpages.hu-tao.dev%2Fskavex%2Fskavex%2Fcoverage.json
+[Coverage Status]: https://pages.hu-tao.dev/skavex/skavex/coverage.json
+[npm Icon]: https://img.shields.io/npm/v/@skavex/skavex
+[npm Status]: https://www.npmjs.com/package/@skavex/skavex
+[Demo Icon]: https://img.shields.io/badge/demo-live-7aa2f7
+[Demo]: https://pages.hu-tao.dev/skavex/skavex/
+[License Icon]: https://img.shields.io/badge/license-MIT-blue.svg
+[License]: https://git.hu-tao.dev/skavex/skavex/src/branch/main/LICENSE
+
 **Server-rendered Markdown + LaTeX for Svelte.** A Vite plugin that compiles
 `.md` files into real Svelte components — so your posts are HTML on first paint,
 with no client-side markdown parsing, no layout shift, and nothing a crawler has
@@ -41,7 +54,7 @@ one regresses. Full method in
 | Output compiles as Svelte       | yes     | **no**                 | **no**          | **no**          |
 | Per document                    | 8.41 ms | **7.18 ms**            | 9.37 ms         | 2.98 ms         |
 
-**skavex is not fast.** It is 1.34× _slower_ than the same pipeline wired by
+**skavex is not fast.** It is 20–50% _slower_ than the same pipeline wired by
 hand, because it does more: it collects headings, renders their maths for a
 table of contents, and escapes prose without touching component tags. Against
 mdsvex it is a tie. And `remark-math 6` is not fast, it is _empty_ — that
@@ -261,10 +274,13 @@ components. Two details are load-bearing, and both are tested:
 ## Development
 
 ```sh
-nix develop       # node + pnpm, the same versions CI uses
+nix develop          # node, pnpm and browsers, the same versions CI uses
 pnpm install
-pnpm test
-pnpm lint
+pnpm test            # unit suite
+pnpm test:coverage   # with thresholds enforced
+pnpm test:e2e        # the demo, driven in a real browser
+pnpm bench           # comparison against mdsvex
+pnpm demo            # the editor, locally
 ```
 
 The suite asserts behaviour rather than snapshots: that braces survive as text,
