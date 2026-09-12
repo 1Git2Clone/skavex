@@ -82,6 +82,7 @@ const { default: Post, metadata } = posts['/src/content/hello.md'];
 | `extensions`    | `string[]`          | `['.md']`   | Which files are documents.                                                                          |
 | `layout`        | `string`            | —           | Component wrapping every document. Gets the metadata as props; the body is its `children`.          |
 | `components`    | `string`            | —           | Directory of `.svelte` files addressable by basename, so plugins can emit `<YouTube />` freely.     |
+| `headings`      | `boolean \| object` | `true`      | Stable heading ids plus `metadata.headings` for a table of contents. `{ levels: [2,3] }` narrows.   |
 | `gfm`           | `boolean`           | `true`      | Tables, strikethrough, task lists, autolinks.                                                       |
 | `math`          | `boolean \| object` | `true`      | LaTeX. An object overrides KaTeX options.                                                           |
 | `remarkPlugins` | `PluggableList`     | `[]`        | Run after frontmatter/GFM/math, before conversion to HTML.                                          |
@@ -105,6 +106,43 @@ export function remarkReadingTime() {
 	};
 }
 ```
+
+## Headings and tables of contents
+
+Every heading gets an `id`, and all of them are collected onto
+`metadata.headings`:
+
+```js
+{
+  id: 'olog-n-logarithmic-complexity',
+  level: 3,
+  text: 'O(\\log n) - Logarithmic Complexity',    // maths as its LaTeX source
+  html: '<span class="katex">…</span> - Logarithmic Complexity'
+}
+```
+
+Two things this exists to get right, both easy to get wrong by hand.
+
+**The id comes from the prose, not from KaTeX.** Collection runs _before_
+KaTeX, so `### $O(\log n)$ - Logarithmic Complexity` slugifies from the LaTeX
+source. Do it afterwards and the slug is built from `<span class="katex">…`,
+which changes whenever KaTeX's output does — silently breaking every anchor
+anyone has shared.
+
+**One `slugify`, used on both sides.** A heading's `id` and a table of contents'
+`href` are produced at different times, so a project that reimplements the slug
+for its navigation keeps two copies that must agree forever. They will not.
+Import the same function instead:
+
+```js
+import { slugify } from '@skavex/skavex';
+```
+
+`html` renders maths with the same KaTeX options as the body, so a formula
+looks — and reads, to a screen reader — the same in the sidebar as in the text.
+
+skavex owns `metadata.headings` while this is on. A project wanting its own
+shape sets `headings: false` and writes a plugin.
 
 ## Writing a plugin that injects a component
 

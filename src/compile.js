@@ -8,6 +8,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
 
 import { remarkExtractFrontmatter } from './frontmatter.js';
+import { rehypeHeadings } from './headings.js';
 import { rehypeEscapeSvelteBraces } from './escape.js';
 import { findComponents, selectUsedComponents } from './components.js';
 
@@ -29,6 +30,11 @@ const LAYOUT_IDENTIFIER = 'SkavexLayout';
  *                                      arranging its own import.
  * @property {string} [root]            Project root that `components` resolves against.
  *                                      Default `process.cwd()`; the Vite plugin supplies Vite's.
+ * @property {boolean|{levels?: number[]}} [headings]
+ *                                      Give headings stable ids and collect them onto
+ *                                      `metadata.headings` for a table of contents. Runs before
+ *                                      KaTeX, so an id follows the prose rather than KaTeX's
+ *                                      markup. Default `true`; pass `{levels}` to narrow.
  * @property {boolean} [gfm]            GitHub Flavored Markdown: tables, strikethrough,
  *                                      task lists, autolinks. Default `true`.
  * @property {boolean|Record<string, unknown>} [math]
@@ -70,7 +76,16 @@ const DEFAULT_KATEX_OPTIONS = { output: 'htmlAndMathml', strict: false };
  *   which options were passed.
  */
 export function createProcessor(options = {}) {
-	const { gfm = true, math = true, remarkPlugins = [], rehypePlugins = [] } = options;
+	const {
+		gfm = true,
+		math = true,
+		headings = true,
+		remarkPlugins = [],
+		rehypePlugins = []
+	} = options;
+
+	const katexOptions =
+		typeof math === 'object' ? { ...DEFAULT_KATEX_OPTIONS, ...math } : DEFAULT_KATEX_OPTIONS;
 
 	const processor = unified()
 		.use(remarkParse)
@@ -87,15 +102,18 @@ export function createProcessor(options = {}) {
 	// emits would vanish between markdown and HTML.
 	processor.use(remarkRehype, { allowDangerousHtml: true });
 
+	// Before the caller's own rehype plugins so they can see the assigned ids,
+	// and before KaTeX so the ids derive from prose. See rehypeHeadings.
+	if (headings) {
+		processor.use(rehypeHeadings, {
+			levels: typeof headings === 'object' ? headings.levels : undefined,
+			katexOptions
+		});
+	}
+
 	processor.use(rehypePlugins);
 
-	if (math) {
-		const katexOptions =
-			typeof math === 'object'
-				? { ...DEFAULT_KATEX_OPTIONS, ...math }
-				: DEFAULT_KATEX_OPTIONS;
-		processor.use(rehypeKatex, katexOptions);
-	}
+	if (math) processor.use(rehypeKatex, katexOptions);
 
 	// After KaTeX: its MathML carries the original LaTeX in an <annotation>,
 	// braces included, and that has to be escaped like any other text.

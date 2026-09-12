@@ -1,6 +1,6 @@
 {
 	"name": "@skavex/skavex",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "Server-rendered Markdown + LaTeX for Svelte. A Vite plugin that compiles .md into real Svelte components.",
 	"keywords": [
 		"svelte",
@@ -57,6 +57,7 @@
 		"prepublishOnly": "pnpm run build && pnpm run lint && pnpm test"
 	},
 	"dependencies": {
+		"katex": "^0.18.7",
 		"rehype-katex": "^7.0.1",
 		"rehype-stringify": "^10.0.1",
 		"remark-frontmatter": "^5.0.0",

@@ -50,12 +50,12 @@ describe('render', () => {
 	it('lets a plugin contribute metadata via data.fm', async () => {
 		// The convention downstream plugins rely on for tables of contents and
 		// reading time.
-		const addHeadings = () => (tree, file) => {
-			file.data.fm = { ...(file.data.fm ?? {}), headings: ['a', 'b'] };
+		const addReadingTime = () => (tree, file) => {
+			file.data.fm = { ...(file.data.fm ?? {}), readingTime: '7 min read' };
 		};
 
-		const { metadata } = await render(WITH_FRONTMATTER, { remarkPlugins: [addHeadings] });
-		expect(metadata.headings).toEqual(['a', 'b']);
+		const { metadata } = await render(WITH_FRONTMATTER, { remarkPlugins: [addReadingTime] });
+		expect(metadata.readingTime).toBe('7 min read');
 		expect(metadata.title).toBe('Intro to Big O');
 	});
 
