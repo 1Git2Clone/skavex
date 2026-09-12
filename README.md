@@ -19,13 +19,42 @@ target unified 11. Combining them does not error — it compiles "successfully"
 and silently emits no maths at all:
 
 ```
-current pins (remark-math 3 + rehype-katex 3)   katex spans = 5   mathml = 0
-modern      (remark-math 6 + rehype-katex 7)    katex spans = 0   mathml = 0   <- silent
+mdsvex + remark-math 3   46 formulas rendered
+mdsvex + remark-math 6    0 formulas rendered   <- no error, no warning
 ```
 
 There is nothing to search for and nothing in a stack trace. If you have ever
 lost a day to that, this library is the way out: it owns the pipeline, so the
 unified version is yours to choose.
+
+## How it compares
+
+Measured, not claimed — `pnpm bench` regenerates every number, and CI fails if
+one regresses. Full breakdown with the method in [BENCHMARKS.md](BENCHMARKS.md).
+
+|                                 | skavex | mdsvex + remark-math 3 | mdsvex + remark-math 6 |
+| ------------------------------- | ------ | ---------------------- | ---------------------- |
+| Formulas rendered               | 46     | 46                     | **0**                  |
+| MathML for screen readers       | 16     | 15                     | **0**                  |
+| Heading ids and TOC data        | yes    | no                     | no                     |
+| Escapes prose, keeps components | yes    | no                     | no                     |
+| Output compiles as Svelte       | yes    | **no**                 | **no**                 |
+| Throughput                      | 111/s  | 97/s                   | 297/s                  |
+
+Two of those need saying plainly. **Throughput is a tie** — across runs skavex
+lands between 1.01× and 1.15× working mdsvex, which is noise, and no one
+should choose an engine on it. And `remark-math 6` is not fast, it is _empty_:
+297/s is the cost of skipping every formula.
+
+The difference a reader feels is elsewhere. Against the same page rendering
+its maths in the browser instead:
+
+|                            | CLS       | JavaScript | Lighthouse |
+| -------------------------- | --------- | ---------- | ---------- |
+| skavex — maths in the HTML | **0.006** | **0 kB**   | 96         |
+| client-side KaTeX          | 0.156     | 270 kB     | 86         |
+
+Core Web Vitals fails anything above `0.100`.
 
 ## Install
 
