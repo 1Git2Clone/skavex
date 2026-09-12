@@ -1,0 +1,86 @@
+# ==============================================================================
+# Publish — @skavex/skavex to this instance's package registry
+# ==============================================================================
+# npm is the canonical registry and is published by hand, because publishing
+# there is irreversible: npm will not let a version number be reused, so it is
+# not something a push should be able to do on its own.
+#
+# This publishes the SAME version to Forgejo's own npm registry, so the package
+# is installable from the instance that hosts its source:
+#
+#   https://git.hu-tao.dev/api/packages/skavex/npm/
+#
+# Forgejo's registry is append-only per version too, so re-running this for a
+# version that already exists fails. That is intended rather than a problem:
+# the tag is the identity, and a tag that has been published is done.
+name: Publish
+
+on:
+  push:
+    tags: ['v*']
+  # So the first run does not require cutting a tag to find out whether the
+  # token has the permission it needs.
+  workflow_dispatch:
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to the Forgejo package registry
+    runs-on: nix
+
+    env:
+      NIX_CONFIG: experimental-features = nix-command flakes
+
+    steps:
+      # Tags fetched as well as the commit: prepublishOnly runs the test suite,
+      # and pnpm wants to see the ref it is publishing from.
+      - name: Checkout
+        run: |
+          git init -q -b main .
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}"
+          git fetch -q --tags origin "$GITHUB_SHA"
+          git checkout -q --detach "$GITHUB_SHA"
+
+      - name: Install
+        run: nix develop -c pnpm install --frozen-lockfile
+
+      # The version in package.json is the identity; a tag that disagrees with
+      # it would publish something nobody asked for under a name implying
+      # otherwise. Checked before anything is uploaded.
+      - name: Check the tag matches the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          version=$(nix develop -c node -p "require('./package.json').version")
+          if [ "$tag" != "$version" ]; then
+            echo "tag v$tag does not match package.json version $version" >&2
+            exit 1
+          fi
+
+      - name: Publish
+        env:
+          # Provided by the runner for this repository. It needs package write
+          # on the owner; a 401 or 403 here is what the absence looks like.
+          FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          registry="${{ github.server_url }}/api/packages/${{ github.repository_owner }}/npm/"
+
+          # Written outside the working tree on purpose. A config holding a live
+          # token inside the checkout is one `git add -A` away from a commit,
+          # and the workspace is not a place to leave one lying around.
+          config="$(mktemp -d)/npm-auth"
+          {
+            printf 'registry=%s\n' "$registry"
+            printf '%s:_authToken=${FORGEJO_TOKEN}\n' "${registry#https:}"
+          } > "$config"
+
+          # --no-git-checks: the checkout above is a detached HEAD, which pnpm
+          # otherwise refuses to publish from.
+          nix develop -c pnpm publish \
+            --registry "$registry" \
+            --userconfig "$config" \
+            --no-git-checks \
+            --access public
