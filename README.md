@@ -17,8 +17,8 @@
 
 **Server-rendered Markdown + LaTeX for Svelte.** A Vite plugin that compiles
 `.md` files into real Svelte components — so your posts are HTML on first paint,
-with no client-side markdown parsing, no layout shift, and nothing a crawler has
-to run JavaScript to see.
+with no markdown parser in the bundle, no maths rendering on the main thread,
+and nothing a crawler has to run JavaScript to see.
 
 **[Documentation](https://pages.hu-tao.dev/skavex/skavex/docs/)** ·
 **[Playground](https://pages.hu-tao.dev/skavex/skavex/)**
@@ -96,10 +96,19 @@ That last one is why this exists.
 | mdsvex + math 3 — also in the HTML | 0.006 | 0 kB       | 95         |
 | client-side KaTeX                  | 0.246 | 270 kB     | 84         |
 
-Read that honestly: skavex and mdsvex are **identical** here, because both
-render at build time. The third row is what a project ends up with after the
-maths silently fails and someone patches it with KaTeX's auto-render script.
-Core Web Vitals fails anything above `0.100`.
+Read that honestly, in two parts.
+
+**skavex and mdsvex are identical here**, because both render at build time.
+The third row is what a project ends up with after the maths silently fails and
+someone patches it with KaTeX's auto-render script.
+
+**The JavaScript column is the durable one.** 270 kB against nothing is a count
+of bytes, the same on every machine. The CLS column is not: these are
+workstation numbers, and on the CI runner — whose container has one font, so
+the KaTeX faces land after first paint — the ordering reverses, with the
+client-rendered page measuring _better_ than the server-rendered ones.
+[BENCHMARKS.md](https://git.hu-tao.dev/skavex/skavex/src/branch/main/BENCHMARKS.md)
+has both sets of numbers and why they disagree.
 
 ## Install
 

@@ -38,6 +38,9 @@ const KATEX_DIST = path.dirname(require.resolve('katex/package.json')) + '/dist'
 /** Layout shift below this is what the spec calls "good". */
 const GOOD_CLS = 0.1;
 
+/** Above this the spec calls layout shift "poor". See the gate at the bottom. */
+const POOR_CLS = 0.25;
+
 /**
  * @param {string} body
  * @param {string} head
@@ -271,7 +274,9 @@ for (const result of results) {
 	console.log(
 		`| ${result.label} ` +
 			`| ${metric(result.score, (value) => String(Math.round(value * 100)))} ` +
-			`| ${metric(result.cls, (value) => value.toFixed(3))} ` +
+			// Marked rather than left to the reader to compare against a threshold
+			// they would have to already know.
+			`| ${metric(result.cls, (value) => `${value.toFixed(3)}${value > GOOD_CLS ? ' (above "good")' : ''}`)} ` +
 			`| ${metric(result.lcp, (value) => `${Math.round(value)} ms`)} ` +
 			`| ${metric(result.tbt, (value) => `${Math.round(value)} ms`)} ` +
 			`| ${(result.scripts / 1024).toFixed(0)} kB |`
@@ -280,18 +285,54 @@ for (const result of results) {
 
 if (process.argv.includes('--check')) {
 	const ssr = results[0];
+	const client = results.at(-1);
+	if (!client)
+		throw new Error('the client-side control did not run; there is nothing to compare against');
 
-	// Layout shift is the claim this benchmark exists to defend, and it is also
-	// the one metric that survives a contended machine: it comes from layout
-	// events rather than from the trace the timing audits need. When even that is
-	// missing there is nothing to judge, and failing the build over an absent
-	// measurement would only teach people to ignore the job.
-	if (!Number.isFinite(ssr.cls)) {
-		console.log('\nNo layout-shift measurement on this machine; nothing to check.');
-	} else if (ssr.cls > GOOD_CLS) {
-		console.error(`\nServer-rendered maths shifted the layout by ${ssr.cls.toFixed(3)}.`);
-		process.exit(1);
-	} else {
-		console.log('\nServer-rendered maths does not move the page.');
+	/** @type {string[]} */
+	const failures = [];
+
+	// Bytes come from the network records rather than from the trace, so unlike
+	// every timing audit they are a count and not an estimate: the same on a
+	// loaded runner as on an idle laptop. This is the claim the library actually
+	// makes, so it is the one worth failing a build over.
+	if (ssr.scripts !== 0) {
+		failures.push(
+			`the server-rendered page shipped ${(ssr.scripts / 1024).toFixed(0)} kB of JavaScript; ` +
+				`the whole point is that it ships none`
+		);
 	}
+
+	// Guards the comparison itself. If the control's script stopped loading, its
+	// numbers would improve, the contrast would vanish, and the benchmark would
+	// go on passing while measuring two copies of the same page.
+	if (client.scripts < 100 * 1024) {
+		failures.push(
+			`the client-side control shipped only ${(client.scripts / 1024).toFixed(0)} kB of ` +
+				`JavaScript, so it is probably not running KaTeX at all`
+		);
+	}
+
+	// A ceiling of 0.25 — "not poor" — rather than the 0.100 that marks "good".
+	//
+	// Layout shift is the one metric here that does not reproduce across
+	// machines. This workstation measures 0.006 for the server-rendered page;
+	// the CI runner measures 0.094 for the same page, because its only font is
+	// the one the flake installs and the KaTeX faces arrive after first paint.
+	// A gate at 0.100 would therefore sit 6% away from failing on a machine
+	// where nothing is wrong, and a benchmark that cries wolf is one people stop
+	// reading. 0.25 still catches maths that genuinely reflows the page.
+	if (Number.isFinite(ssr.cls) && ssr.cls > POOR_CLS) {
+		failures.push(`server-rendered maths shifted the layout by ${ssr.cls.toFixed(3)}`);
+	}
+
+	if (failures.length > 0) {
+		console.error(`\n${failures.map((line) => `- ${line}`).join('\n')}`);
+		process.exit(1);
+	}
+
+	console.log(
+		`\nServer-rendered maths ships no JavaScript, against ` +
+			`${(client.scripts / 1024).toFixed(0)} kB for the client-rendered page.`
+	);
 }

@@ -108,16 +108,44 @@ here is not a strawman: its body is literally the output of
 `mdsvex + remark-math 6`, with KaTeX's own auto-render script wired up the way
 its documentation recommends.
 
-| Page                       | Performance | CLS       | LCP     | Blocking | JavaScript |
-| -------------------------- | ----------- | --------- | ------- | -------- | ---------- |
-| skavex — maths in the HTML | **96**      | **0.006** | 2254 ms | 0 ms     | **0 kB**   |
-| client-side KaTeX          | 86          | 0.156     | 3208 ms | 6 ms     | 270 kB     |
+| Page                               | Performance | CLS       | LCP     | Blocking | JavaScript |
+| ---------------------------------- | ----------- | --------- | ------- | -------- | ---------- |
+| skavex — maths in the HTML         | **96**      | **0.006** | 2254 ms | 0 ms     | **0 kB**   |
+| mdsvex + math 3 — also in the HTML | 95          | 0.006     | 2403 ms | 0 ms     | 0 kB       |
+| client-side KaTeX                  | 86          | 0.156     | 3214 ms | 12 ms    | 270 kB     |
 
-`0.156` is the number that matters. Core Web Vitals calls anything above
-`0.100` a failure, so a page that renders its maths in the browser fails on
-layout shift — the text reflows underneath the reader as each formula is
-replaced by a typeset one. And it pays 270 kB of JavaScript to get there,
-against nothing at all.
+**270 kB against nothing is the figure that holds.** It is a count of transfer
+bytes rather than a timing estimate, so it is the same on a loaded runner as on
+an idle laptop, and it is the same next week. So is the blocking time: the
+server-rendered pages give the main thread no work to do, because there is no
+script to run.
+
+**Layout shift is the figure that does not hold, and this document used to
+claim otherwise.** On this workstation the client-rendered page measures
+`0.156` — above the `0.100` Core Web Vitals calls "good", because the text
+reflows as each formula is replaced by a typeset one. Repeat the run and it
+moves between roughly `0.15` and `0.25`. On the CI runner it measures `0.079`,
+_better_ than the `0.094` the server-rendered pages measure there. The
+ordering reverses.
+
+The reason is fonts. The runner's container has exactly one, installed by the
+flake, so the KaTeX faces arrive after first paint and move the typeset maths
+that is already on the page; the client-rendered page has nothing laid out yet
+to move. Layout shift here is measuring the font situation as much as the
+rendering strategy, and it should not be read as a property of either library.
+
+The honest summary is the narrow one: server-rendering maths costs the reader
+no JavaScript and no main-thread work. Whether it also wins on layout shift
+depends on the machine.
+
+> **Correction.** An earlier version of this file reported **CLS 0.440** for the
+> client-rendered page on CI and read it as "a slow machine is exactly where
+> rendering maths in the browser hurts most". That number was measured in a
+> browser with no fonts installed, where text is laid out with zero metrics and
+> the server-rendered pages scored `0.000` not because they were stable but
+> because nothing on them had any height. Every Lighthouse figure CI produced
+> before the fonts were added was of that kind — performance `0`, all timings
+> `n/a`. The conclusion drawn from it was not supported.
 
 ## The CI gate
 
@@ -137,17 +165,24 @@ What it does assert:
   formulas, MathML nodes, heading ids, escaped prose, surviving component
   tags, and that the output compiles. Each one corresponds to something that
   has silently stopped working in a real project.
-- **That server-rendered maths does not move the page** — CLS at or under
-  0.100.
+- **That the server-rendered page ships no JavaScript at all**, and that the
+  client-rendered control ships more than 100 kB. The first is the library's
+  claim. The second guards the comparison: if the control's script stopped
+  loading, its numbers would improve, the contrast would disappear, and the
+  benchmark would go on passing while measuring two copies of the same page.
+  Both are counts of transfer bytes, so both are exact.
+- **That server-rendered maths is never "poor" on layout shift** — CLS at or
+  under 0.250.
 
-Lighthouse's trace engine gives up on a heavily loaded machine and returns NaN
-for the timing-derived audits, so the table prints `n/a` for those rather than
-a number that is not a measurement. Layout shift survives — it comes from
-layout events rather than from the trace those audits need — which is
-convenient, because it is the metric the claim rests on. On the CI runner the
-client-rendered page measured **CLS 0.440**, considerably worse than the 0.156
-on a quiet workstation: a slow machine is exactly where rendering maths in the
-browser hurts most.
+That last ceiling is deliberately the "poor" threshold rather than the `0.100`
+that marks "good", and the reason is in the section above: the runner measures
+`0.094` for a page this workstation measures `0.006` at, with nothing wrong in
+either case. A gate at `0.100` would sit six percent from failing on a healthy
+machine, and a benchmark that cries wolf is one people stop reading.
+
+Lighthouse's trace engine still gives up on a heavily loaded machine and
+returns NaN for the timing-derived audits, so the table prints `n/a` rather
+than a number that is not a measurement.
 
 A count may grow when the corpus or KaTeX's markup changes. It may never
 shrink, because shrinking is what a silent failure looks like.

@@ -2,8 +2,8 @@
 
 **Server-rendered Markdown + LaTeX for Svelte.** A Vite plugin that compiles
 `.md` files into real Svelte components, so a document is HTML on first paint —
-no client-side markdown parsing, no layout shift, and nothing a crawler has to
-run JavaScript to see.
+no markdown parser in the bundle, no maths rendering on the main thread, and
+nothing a crawler has to run JavaScript to see.
 
 There is a [live playground](https://pages.hu-tao.dev/skavex/skavex/). It is
 the unusual case: it ships the whole pipeline _and_ the Svelte compiler to your

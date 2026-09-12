@@ -222,11 +222,6 @@
 		pipeline <em>and</em> the Svelte compiler to your browser so it can rebuild as you type; a site built
 		with skavex ships neither.
 	</p>
-	<nav>
-		<a href="./docs/">docs</a>
-		<a href="https://www.npmjs.com/package/@skavex/skavex">npm</a>
-		<a href="https://git.hu-tao.dev/skavex/skavex">source</a>
-	</nav>
 </header>
 
 <main>
