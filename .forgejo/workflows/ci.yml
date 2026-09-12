@@ -94,5 +94,15 @@ jobs:
       - name: Browser tests
         run: nix develop -c pnpm test:e2e
 
+      # Regression monitoring for the claims in BENCHMARKS.md. Deliberately
+      # asserts no absolute timing: this box also serves mail, git and a
+      # minecraft server, so a millisecond threshold would fail on a busy
+      # afternoon and tell nobody anything. What is gated is a ratio measured
+      # in the same process within seconds of itself, the capability counts
+      # (which are deterministic), and that server-rendered maths does not
+      # move the page.
+      - name: Benchmarks
+        run: nix develop -c pnpm bench:check
+
       - name: Evaluate the flake
         run: nix flake check --all-systems --no-build --print-build-logs
