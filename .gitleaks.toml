@@ -12,6 +12,12 @@ useDefault = true
 description = "Generated, vendored or cached trees that nobody here writes"
 paths = [
   '''(^|/)node_modules/''',
+  # CI's pnpm store. The runner gives the job no writable HOME, so pnpm puts its
+  # content-addressable store inside the workspace — 240 MB of other people's
+  # packages, which a `dir` scan reads because it does not consult .gitignore.
+  # It found fifteen "secrets" in there on the first CI run.
+  '''^\.pnpm-store/''',
+  '''^\.direnv/''',
   '''^\.pre-commit-cache/''',
   '''^demo/dist/''',
   '''^docs/book/''',
