@@ -7,5 +7,7 @@ result
 test/.tmp/
 coverage/
 demo/dist/
+test-results/
+playwright-report/
 *.tgz
 types/

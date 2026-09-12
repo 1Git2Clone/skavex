@@ -3,3 +3,5 @@ test/.tmp/
 flake.lock
 types/
 demo/dist/
+test-results/
+playwright-report/

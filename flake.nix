@@ -27,7 +27,21 @@
           packages = [
             pkgs.nodejs_26
             pkgs.pnpm
+            # Browsers for the Playwright suite. Taken from nixpkgs rather than
+            # `playwright install`, which downloads prebuilt binaries that do
+            # not run on NixOS — and which CI would re-download every run,
+            # since the runner keeps no cache.
+            pkgs.playwright-driver.browsers
           ];
+
+          # The two variables that make @playwright/test use the browsers above
+          # instead of looking for its own under ~/.cache. The npm package's
+          # version has to match pkgs.playwright-driver, or it refuses the
+          # revision it finds; package.json pins it exactly for that reason.
+          env = {
+            PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
+            PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+          };
         };
       });
 

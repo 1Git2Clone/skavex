@@ -83,5 +83,16 @@ jobs:
       - name: Test
         run: nix develop -c pnpm test
 
+      # The demo is built and driven in a real browser here, so this covers both:
+      # that the published page works, and that the library's output — MathML,
+      # heading ids, escaped prose beside an untouched component tag — survives
+      # all the way into a DOM.
+      #
+      # Chromium comes from the dev shell rather than `playwright install`,
+      # whose prebuilt binaries are linked against paths NixOS does not have —
+      # and which this cacheless runner would re-download on every single run.
+      - name: Browser tests
+        run: nix develop -c pnpm test:e2e
+
       - name: Evaluate the flake
         run: nix flake check --all-systems --no-build --print-build-logs
