@@ -81,6 +81,7 @@ jobs:
       - name: Publish
         run: |
           dest="/pages/$GITHUB_REPOSITORY"
-          rm -rf "$dest" && mkdir -p "$dest/docs"
+          rm -rf "$dest" && mkdir -p "$dest/docs" "$dest/coverage"
           cp -r demo/dist/. "$dest/"
           cp -r docs/book/. "$dest/docs/"
+          cp -r coverage/lcov-report/. "$dest/coverage/"

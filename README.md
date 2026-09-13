@@ -5,7 +5,7 @@
 [CI Icon]: https://git.hu-tao.dev/skavex/skavex/badges/workflows/ci.yml/badge.svg
 [CI Status]: https://git.hu-tao.dev/skavex/skavex/actions
 [Coverage Icon]: https://img.shields.io/endpoint?url=https%3A%2F%2Fpages.hu-tao.dev%2Fskavex%2Fskavex%2Fcoverage.json
-[Coverage Status]: https://pages.hu-tao.dev/skavex/skavex/coverage.json
+[Coverage Status]: https://pages.hu-tao.dev/skavex/skavex/coverage/
 [npm Icon]: https://img.shields.io/npm/v/@skavex/skavex
 [npm Status]: https://www.npmjs.com/package/@skavex/skavex
 [Docs Icon]: https://img.shields.io/badge/docs-book-7aa2f7
