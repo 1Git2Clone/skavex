@@ -35,19 +35,46 @@ The name alternates between the two things it joins:
 
 ## Why
 
-[mdsvex](https://mdsvex.pngwn.io/) has been in maintenance mode for a long time,
-and it bundles **unified 8** (2020). Modern `remark-math` and `rehype-katex`
-target unified 11. Combining them does not error — it compiles "successfully"
-and silently emits no maths at all:
+[mdsvex](https://mdsvex.pngwn.io/) is not abandoned — it shipped as recently as
+0.12.8. It is *stuck*, and the reason is worth understanding before you pick
+either library.
+
+mdsvex implements Svelte support by patching the markdown parser's tokenizer
+table:
+
+```js
+const block_tokenizers = this.Parser.prototype.blockTokenizers;
+block_tokenizers.svelteBlock = parse_svelte_block;
+block_tokenizers.svelteTag = parse_svelte_tag;
+```
+
+That API is unified 8. remark replaced its parser with **micromark** in unified
+9, and `this.Parser`, `blockTokenizers` and `blockMethods` no longer exist. So
+mdsvex cannot upgrade without rewriting its Svelte parsing as micromark syntax
+extensions — hand-written state machines, and the steepest climb in the
+ecosystem. Patch releases ship; the one that matters cannot.
+
+The cost lands on you as silence. Every modern remark plugin registers itself
+through `data.micromarkExtensions`, which mdsvex's parser never reads. Writing
+to it is legal, so nothing errors — the plugin is simply never consulted:
 
 ```
 mdsvex + remark-math 3   46 formulas rendered
 mdsvex + remark-math 6    0 formulas rendered   <- no error, no warning
 ```
 
-There is nothing to search for and nothing in a stack trace. If you have ever
-lost a day to that, this library is the way out: it owns the pipeline, so the
-unified version is yours to choose.
+Nothing to search for, nothing in a stack trace. The usual advice is to pin
+`remark-math@3` and `rehype-katex@3`, but that is not a fix: it pulls in the
+whole unified 8 tree (`unist-util-visit@2`, `vfile@4`) and every modern remark
+plugin you add afterwards fails the same silent way. The pin does not solve the
+problem, it returns you to the point where the problem was invisible.
+
+**skavex never extends the parser.** Component tags arrive as ordinary HTML
+nodes and are kept intact by a rule about tree nodes — `text` is prose and gets
+escaped, `raw` is deliberate markup and does not. Tree-level work survives a
+unified major; tokenizer-level work is welded to one. That is the whole
+difference, and it is why skavex is on unified 11 today and why the version is
+yours to choose rather than ours to pin.
 
 ## How it compares
 
