@@ -250,7 +250,11 @@
 			>
 				<span></span><span></span><span></span>
 			</button>
-			{#if treeOpen}<span class="root">workspace</span>{/if}
+			{#if treeOpen}
+				<span class="root">workspace</span>
+			{:else}
+				<span class="spine" title={focused}>{focused}</span>
+			{/if}
 		</div>
 
 		{#if treeOpen}
@@ -301,8 +305,6 @@
 					</div>
 				{/each}
 			</nav>
-		{:else}
-			<div class="spine" title={focused}>{focused}</div>
 		{/if}
 	</aside>
 

@@ -267,6 +267,16 @@ textarea:focus {
 	background: var(--text);
 }
 
+/* Collapsed, the bar turns on its side — hamburger above, the focused file
+   reading down the rail. It is the same bar the expanded tree has, rather than
+   a second thing beneath it, so the two cannot drift apart. */
+.files:not(.open) .bar {
+	flex-direction: column;
+	height: 100%;
+	padding: 0.4rem 0.25rem;
+	border-bottom: 0;
+}
+
 /* Collapsed, the rail still says which file is open — the point of collapsing
    is to reclaim width, not to lose your place. */
 .spine {
@@ -467,20 +477,17 @@ mark {
 		width: auto;
 	}
 
+	/* Stacked, the collapsed band reads across in one row — the same shape the
+	   bar has when the tree is open, so the two states match. */
+	.files:not(.open) .bar {
+		flex-direction: row;
+		height: auto;
+		padding: 0.4rem 0.75rem;
+	}
+
 	.spine {
 		writing-mode: horizontal-tb;
 		margin: 0;
 		padding: 0;
-	}
-
-	/* Collapsed, the band holds a hamburger and a filename and nothing else, so
-	   it is one row rather than two stacked bars' worth of height. */
-	.files:not(.open) {
-		flex-direction: row;
-		align-items: center;
-	}
-
-	.files:not(.open) .bar {
-		border-bottom: 0;
 	}
 }
