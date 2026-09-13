@@ -76,45 +76,6 @@ main {
 	min-height: 0;
 }
 
-@media (max-width: 900px) {
-	/* Stacked, the panes are taller than the viewport by design, so the page
-	   scrolls again. */
-	body {
-		height: auto;
-		overflow: visible;
-	}
-
-	#app {
-		height: auto;
-	}
-
-	main {
-		grid-template-columns: 1fr;
-	}
-
-	main {
-		/* Stacked, each pane gets its own height and the page scrolls. */
-		grid-template-rows: none;
-	}
-
-	.pane {
-		height: 70dvh;
-	}
-
-	/* Stacked, the tree is a full-width band, so the collapsed rail reads
-	   across rather than down. */
-	.files,
-	.files.open {
-		width: auto;
-	}
-
-	.spine {
-		writing-mode: horizontal-tb;
-		margin: 0;
-		padding: 0 0.75rem 0.6rem;
-	}
-}
-
 .pane {
 	display: flex;
 	flex-direction: column;
@@ -470,4 +431,56 @@ mark {
 	color: inherit;
 	border-radius: 3px;
 	padding: 0 0.15rem;
+}
+
+/* --- narrow viewports -------------------------------------------------- */
+/* Last in the file on purpose. Every rule here overrides one above it at the
+   same specificity — `.files.open` in particular — and a media query adds no
+   specificity of its own, so source order is the only thing that decides.
+   Sitting where it used to, near the top, the whole block lost every one of
+   those ties and the stacked layout never rendered on a phone. */
+@media (max-width: 900px) {
+	/* Stacked, the panes are taller than the viewport by design, so the page
+	   scrolls again, and each pane gets its own height. */
+	body {
+		height: auto;
+		overflow: visible;
+	}
+
+	#app {
+		height: auto;
+	}
+
+	main {
+		grid-template-columns: 1fr;
+		grid-template-rows: none;
+	}
+
+	.pane {
+		height: 70dvh;
+	}
+
+	/* Stacked, the tree is a full-width band, so the collapsed rail reads
+	   across rather than down. */
+	.files,
+	.files.open {
+		width: auto;
+	}
+
+	.spine {
+		writing-mode: horizontal-tb;
+		margin: 0;
+		padding: 0;
+	}
+
+	/* Collapsed, the band holds a hamburger and a filename and nothing else, so
+	   it is one row rather than two stacked bars' worth of height. */
+	.files:not(.open) {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.files:not(.open) .bar {
+		border-bottom: 0;
+	}
 }
