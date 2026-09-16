@@ -66,10 +66,31 @@
 		// Bumping them to 6 and 7 would not update a dependency, it would delete
 		// the evidence: the benchmark would quietly become a second copy of the
 		// skavex configuration and still pass.
+		//
+		// matchDepNames, not matchPackageNames: these are npm aliases, so the
+		// package name Renovate sees is remark-math and rehype-katex — the real
+		// packages, which this repo also depends on at 6 and 7 and does want
+		// bumped. Only the depName distinguishes the two, and matching on the
+		// package name here both missed these and would have frozen the pair
+		// that is meant to move.
 		{
-			matchPackageNames: ['remark-math-legacy', 'rehype-katex-legacy'],
+			matchDepNames: ['remark-math-legacy', 'rehype-katex-legacy'],
 			enabled: false,
 			description: 'Pinned to the unified 8 era on purpose; see BENCHMARKS.md.'
+		},
+
+		// svelte-check's peer range is `typescript ^5 || ^6`, latest included, and
+		// `pnpm check` is what runs it. So typescript 7 does not fail a type check
+		// here, it fails `pnpm install` — which is also why Renovate could not
+		// build a lockfile for its own v7 pull request and opened one that CI
+		// could only reject.
+		//
+		// Drop this rule when svelte-check accepts 7; the major is then a normal
+		// bump, not a choice between the compiler and the Svelte checker.
+		{
+			matchPackageNames: ['typescript'],
+			allowedVersions: '<7',
+			description: "Capped by svelte-check's peer range, not by preference."
 		}
 	]
 }
