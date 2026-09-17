@@ -66,8 +66,18 @@
 		// Bumping them to 6 and 7 would not update a dependency, it would delete
 		// the evidence: the benchmark would quietly become a second copy of the
 		// skavex configuration and still pass.
+		//
+		// matchDepNames, not matchPackageNames. These are npm aliases, and for an
+		// alias the two differ: depName is the key in package.json
+		// (`remark-math-legacy`), packageName is what it resolves to on the
+		// registry (`remark-math`). matchPackageNames compares against the latter,
+		// so listing the alias names there matched nothing and the rule never
+		// fired — the exact silent failure the header warns about, visible only as
+		// a `renovate/major-remark` branch on the dashboard offering the bump this
+		// rule exists to refuse. Matching on packageName instead is not the fix:
+		// that would also disable the real remark-math the library depends on.
 		{
-			matchPackageNames: ['remark-math-legacy', 'rehype-katex-legacy'],
+			matchDepNames: ['remark-math-legacy', 'rehype-katex-legacy'],
 			enabled: false,
 			description: 'Pinned to the unified 8 era on purpose; see BENCHMARKS.md.'
 		}
