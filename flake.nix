@@ -31,7 +31,14 @@
             # `playwright install`, which downloads prebuilt binaries that do
             # not run on NixOS — and which CI would re-download every run,
             # since the runner keeps no cache.
-            pkgs.playwright-driver.browsers
+            #
+            # -chromium, not the full set. playwright.config.js declares one
+            # project and says why, so firefox and webkit were closure the suite
+            # never launched — and on a cacheless runner that closure is paid
+            # for on every single push. It is also a liability: nixos-unstable
+            # currently ships a playwright-webkit that fails auto-patchelf on a
+            # missing libmanette, which took the whole dev shell down with it.
+            pkgs.playwright-driver.browsers-chromium
             # Fonts. The job container ships none, and a Chromium with no fonts
             # at all does not fall back to something narrower — it lays text out
             # with zero metrics, so every box sized by its text collapses to
@@ -55,7 +62,7 @@
           # version has to match pkgs.playwright-driver, or it refuses the
           # revision it finds; package.json pins it exactly for that reason.
           env = {
-            PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
+            PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers-chromium}";
             PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
             # Chromium finds fonts through fontconfig, which looks in the host's
             # directories — none of which exist in the runner's container. This

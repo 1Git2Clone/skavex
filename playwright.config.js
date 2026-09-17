@@ -29,7 +29,15 @@ export default defineConfig({
 	// that browsers differ; a second engine would double the runtime of a job on
 	// a box that is also serving mail and git for one more copy of the same
 	// assertion.
-	projects: [{ name: 'chromium', use: devices['Desktop Chrome'] }],
+	//
+	// channel: 'chromium' launches the full Chromium build in headless mode
+	// rather than the separate chrome-headless-shell, which is Playwright's
+	// default and which flake.nix does not ship: the dev shell takes
+	// playwright-driver.browsers-chromium, and that derivation carries
+	// chromium-<rev> and ffmpeg alone. Without this the launch fails with
+	// "Executable doesn't exist" and advises `playwright install`, which is
+	// precisely what a pinned, offline CI must not do.
+	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], channel: 'chromium' } }],
 
 	// A flaky rerun locally is convenience; in CI it turns a real intermittent
 	// failure into a green run, so it is off there.

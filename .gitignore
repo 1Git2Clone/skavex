@@ -18,3 +18,8 @@ docs/book/
 
 # pre-commit keeps its hook environments here when HOME is not writable.
 .pre-commit-cache/
+
+# svelte-check --tsgo writes a shadow tsconfig and generated .ts files for the
+# workspace it checks. Regenerated on every run, and CI's Docs step fails on a
+# dirty tree, so it cannot be left untracked either.
+demo/.svelte-check/
