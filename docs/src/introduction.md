@@ -12,7 +12,7 @@ browser so it can rebuild as you type. A site built with skavex ships neither.
 ## Why this exists
 
 [mdsvex](https://mdsvex.pngwn.io/) is not abandoned — it still ships releases.
-It is *stuck*, and on something structural: its Svelte support is implemented
+It is _stuck_, and on something structural: its Svelte support is implemented
 by patching the markdown parser's tokenizer table, an API that belongs to
 **unified 8**.
 

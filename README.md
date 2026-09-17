@@ -36,7 +36,7 @@ The name alternates between the two things it joins:
 ## Why
 
 [mdsvex](https://mdsvex.pngwn.io/) is not abandoned — it shipped as recently as
-0.12.8. It is *stuck*, and the reason is worth understanding before you pick
+0.12.8. It is _stuck_, and the reason is worth understanding before you pick
 either library.
 
 mdsvex implements Svelte support by patching the markdown parser's tokenizer

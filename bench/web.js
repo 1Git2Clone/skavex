@@ -211,7 +211,14 @@ const server = await serve(pages);
 // A fixed port would collide with a second run on the same machine; Lighthouse
 // needs to be told which browser to drive, so the port is chosen here.
 const port = 9222 + (process.pid % 500);
-const browser = await chromium.launch({ args: [`--remote-debugging-port=${port}`] });
+// channel: 'chromium' for the same reason playwright.config.js sets it — the
+// dev shell ships playwright-driver.browsers-chromium, which carries the full
+// Chromium build but not the chrome-headless-shell Playwright reaches for by
+// default.
+const browser = await chromium.launch({
+	channel: 'chromium',
+	args: [`--remote-debugging-port=${port}`]
+});
 
 /**
  * One page's audit, as the table prints it.
