@@ -1,6 +1,6 @@
 {
 	"name": "@skavex/skavex",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "Server-rendered Markdown + LaTeX for Svelte. A Vite plugin that compiles .md into real Svelte components.",
 	"keywords": [
 		"svelte",

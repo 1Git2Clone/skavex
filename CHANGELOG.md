@@ -3,6 +3,53 @@
 Notable changes per release. This file starts at 0.3.0; for 0.1.0 through
 0.2.1, `git log` is the record.
 
+## 0.4.1
+
+No change to `src/`. The compiler, the options and every export are byte for
+byte what 0.4.0 shipped; this release exists for a corrected README and for the
+toolchain that builds the tarball.
+
+### Fixed
+
+- **The README described mdsvex as unmaintained.** It is not — it shipped 0.12.8.
+  It is _stuck_, on something structural: its Svelte support patches the markdown
+  parser's tokenizer table, an API belonging to unified 8. That is a different
+  claim and a fairer one, and both the README and the book now make it.
+
+### Infrastructure
+
+Nothing below reaches a consumer. It is recorded because the tarball is now
+built by a different compiler than 0.4.0's was.
+
+- **TypeScript 7**, as `@typescript/native`. It cannot simply replace
+  TypeScript 6: `svelte-check` refuses to start unless both are installed and it
+  is given `--tsgo`, and `typescript-eslint` caps its peer range below 6.1. So
+  the package named `typescript` stays on 6 and 7 arrives beside it. Both ship a
+  `tsc` binary, so `build` and `check` name the one they mean rather than
+  inheriting whichever pnpm linked last. The declaration output differs from 6's
+  only in spelling — `export declare function` for `export function`, single
+  quotes for double — and not in a single type.
+- **Vitest 5**, and lock file maintenance across npm and nixpkgs: node 26.8.2,
+  pnpm 11.27.0, `@playwright/test` 1.63.0 to match the driver the flake pins.
+- **The dev shell takes `playwright-driver.browsers-chromium`** rather than all
+  three engines. `playwright.config.js` has always declared one project, so
+  Firefox and WebKit were closure the suite never launched — paid for on every
+  push by a runner that keeps no cache, and, when nixos-unstable shipped a
+  `playwright-webkit` that fails auto-patchelf, enough to take the whole shell
+  down. That derivation carries the full Chromium build but not the separate
+  `chrome-headless-shell`, hence `channel: 'chromium'` in the config and in the
+  web benchmark.
+- **Prettier normalises emphasis to underscores**, which the 0.4.0-era docs
+  commit did not, so `pre-commit run --all-files` had failed on every push and
+  pull request since — including four Renovate branches, which cut from a main
+  that was already red.
+- **Renovate's rule pinning `remark-math-legacy` and `rehype-katex-legacy` to
+  the unified 8 era had never fired.** They are npm aliases, and
+  `matchPackageNames` compares the registry name rather than the key in
+  `package.json`, so a list of alias names matched nothing. It is `matchDepNames`
+  now. Matching on the registry name is not the fix: that would also disable the
+  real `remark-math` the library depends on.
+
 ## 0.4.0
 
 ### Removed — headings, tables of contents, and the metadata shape
