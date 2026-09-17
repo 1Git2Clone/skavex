@@ -19,6 +19,14 @@ export default [
 			// a good deal of JavaScript nobody here wrote. Lands in the working
 			// tree rather than under HOME because CI's runner has no writable one.
 			'.pre-commit-cache/**',
+			// svelte-check --tsgo writes a shadow workspace here: a generated .js
+			// per .svelte file, full of the compiler's own globals (svelteHTML,
+			// __sveltets_*). Nobody wrote it and no rule applies to it. Ignored
+			// here as well as in .gitignore because eslint does not read that file
+			// — `eslint .` walks the filesystem, which is how `pnpm lint` found 83
+			// errors in it while the pre-commit hook, which passes an explicit
+			// list of tracked files, saw none.
+			'demo/.svelte-check/**',
 			'coverage/**'
 		]
 	},

@@ -83,6 +83,25 @@ jobs:
       - name: Types
         run: nix develop -c pnpm check
 
+      # `pnpm lint`, even though the Hooks step above already ran prettier and
+      # eslint. The two are not the same check and cannot substitute for each
+      # other: pre-commit hands its hooks an explicit list of files derived from
+      # git, so it sees tracked files only, while `eslint .` walks the working
+      # tree — and eslint's flat config does not read .gitignore. Anything
+      # generated and untracked is therefore invisible to one and linted by the
+      # other.
+      #
+      # AFTER Types on purpose. `pnpm check` is what writes demo/.svelte-check,
+      # so running this before it would reproduce the blind spot rather than
+      # close it: the tree a contributor lints is the one that exists after a
+      # check has run.
+      #
+      # This is also the command `prepublishOnly` runs, which is how the gap was
+      # found — CI was green on a commit that could not be published, because
+      # nothing here had ever run the publish's own gate.
+      - name: Lint
+        run: nix develop -c pnpm lint
+
       # The suite asserts behaviour, not snapshots: that braces in prose survive
       # as text, that KaTeX reaches the server-rendered HTML, and that generated
       # modules compile. See test/ for what each case is guarding.

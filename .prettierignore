@@ -7,3 +7,4 @@ docs/book/
 .pre-commit-cache/
 test-results/
 playwright-report/
+demo/.svelte-check/
