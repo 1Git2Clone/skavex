@@ -138,8 +138,17 @@ jobs:
       #
       # Downgrading to @v3 would also dodge the check, by using the retired v3
       # upload API. Deprecated upstream and a step backwards for no gain.
+      #
+      # The bare owner/repo form resolves against the instance's
+      # [actions] DEFAULT_ACTIONS_URL, which is unset here and so takes
+      # Forgejo's own default of https://code.forgejo.org. Note that this is
+      # ALREADY where a bare `actions/...` goes: code.forgejo.org/actions is a
+      # plain mirror of GitHub's actions, GHES check and all, so switching
+      # owner is the whole fix -- there is no alias that could make
+      # `actions/upload-artifact` mean the fork, and nothing here was ever
+      # reaching github.com to begin with.
       - name: Publish
-        uses: https://code.forgejo.org/forgejo/upload-artifact@v5
+        uses: forgejo/upload-artifact@v5
         with:
           name: pages
           path: _site/
