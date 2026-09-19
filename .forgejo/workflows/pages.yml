@@ -32,13 +32,6 @@ jobs:
     # No node in the container means no `uses:` — hence the manual checkout.
     runs-on: nix
 
-    container:
-      # The one volume the runner's allow-list permits, and the same one caddy
-      # serves read-only. Any other entry here is refused outright. See
-      # modules/containers/forgejo-runner.nix in the vps repo.
-      volumes:
-        - pages_data:/pages
-
     env:
       NIX_CONFIG: experimental-features = nix-command flakes
 
@@ -78,10 +71,51 @@ jobs:
           nix develop -c pnpm test:coverage
           nix develop -c node scripts/coverage-badge.js demo/dist/coverage.json
 
-      - name: Publish
+      # THE JOB NO LONGER WRITES THE SITE — IT UPLOADS IT.
+      #
+      # This used to mount `pages_data:/pages` and copy the three trees into it.
+      # That worked while the Actions runner lived on the same box as caddy, and
+      # it is exactly what the move to a separate runner forbids: it is the
+      # runner reaching into the web server's storage.
+      #
+      # The failure mode after that move is worth knowing, because it is silent.
+      # The new runner sets `valid_volumes: []`, which does not reject the
+      # workflow — it drops the mount. The copies then succeed into the
+      # container's own filesystem and vanish when the job ends, so the run is
+      # GREEN and the published site simply never changes.
+      #
+      # The VPS pulls instead: modules/pages-pull.nix in the vps repo polls
+      # every five minutes for the newest artifact named exactly `pages` and
+      # unpacks it to <pages volume>/<owner>/<repo>. The name is the contract,
+      # and the artifact's own root becomes that directory — hence assembling
+      # the exact tree here first rather than uploading three paths.
+      - name: Assemble the published tree
         run: |
-          dest="/pages/$GITHUB_REPOSITORY"
-          rm -rf "$dest" && mkdir -p "$dest/docs" "$dest/coverage"
-          cp -r demo/dist/. "$dest/"
-          cp -r docs/book/. "$dest/docs/"
-          cp -r coverage/lcov-report/. "$dest/coverage/"
+          rm -rf _site
+          mkdir -p _site/docs _site/coverage
+          cp -r demo/dist/. _site/
+          cp -r docs/book/. _site/docs/
+          cp -r coverage/lcov-report/. _site/coverage/
+
+      # actions/upload-artifact is a JavaScript action, and this job runs on the
+      # `nix` label — nixos/nix carries no node, which is the same reason
+      # Checkout above is a hand-written `git fetch` rather than
+      # actions/checkout. The dev shell already has nodejs for pnpm, so put that
+      # one on PATH instead of pulling a second toolchain into the job.
+      - name: Put the dev shell's node on PATH for the upload action
+        run: |
+          node_bin=$(nix develop -c bash -c 'command -v node')
+          if [ -z "$node_bin" ]; then
+            echo "no node in the dev shell — upload-artifact cannot run" >&2
+            exit 1
+          fi
+          dirname "$node_bin" >> "$GITHUB_PATH"
+
+      - name: Publish
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages
+          path: _site/
+          # An empty upload would otherwise be a green run that quietly leaves
+          # the last good site in place forever.
+          if-no-files-found: error
