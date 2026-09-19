@@ -97,11 +97,11 @@ jobs:
           cp -r docs/book/. _site/docs/
           cp -r coverage/lcov-report/. _site/coverage/
 
-      # actions/upload-artifact is a JavaScript action, and this job runs on the
-      # `nix` label — nixos/nix carries no node, which is the same reason
-      # Checkout above is a hand-written `git fetch` rather than
-      # actions/checkout. The dev shell already has nodejs for pnpm, so put that
-      # one on PATH instead of pulling a second toolchain into the job.
+      # upload-artifact is a JavaScript action, and this job runs on the `nix`
+      # label — nixos/nix carries no node, which is the same reason Checkout
+      # above is a hand-written `git fetch` rather than actions/checkout. The
+      # dev shell already has nodejs for pnpm, so put that one on PATH instead
+      # of pulling a second toolchain into the job.
       - name: Put the dev shell's node on PATH for the upload action
         run: |
           node_bin=$(nix develop -c bash -c 'command -v node')
@@ -111,8 +111,35 @@ jobs:
           fi
           dirname "$node_bin" >> "$GITHUB_PATH"
 
+      # forgejo/... AND NOT actions/..., which is not a mirror choice — it is
+      # the only version of this action that can run here at all.
+      #
+      # actions/upload-artifact@v4 bundles @actions/artifact v2, which opens
+      # every upload with a hostname test:
+      #
+      #     const isGitHubHost = hostname === 'GITHUB.COM'
+      #     const isGheHost    = hostname.endsWith('.GHE.COM')
+      #     return !isGitHubHost && !isGheHost && !isLocalHost
+      #
+      # GITHUB_SERVER_URL here is https://git.hu-tao.dev, so the library
+      # concludes it is talking to a self-hosted GitHub Enterprise Server and
+      # throws GHESNotSupportedError before opening a socket. Forgejo is not
+      # GHES and the API it needs is right there; the client simply refuses to
+      # look. That is why the failure was invisible at every layer below this
+      # one — caddy's access log recorded ZERO artifact requests from the
+      # runner, because none was ever made.
+      #
+      # The Forgejo fork is one commit on top of the same upstream release,
+      # titled "disable GHES check", and the commit is the whole diff:
+      # isGhes() returns false. Same node20 runtime, same inputs, same twirp
+      # calls (CreateArtifact/FinalizeArtifact against
+      # /twirp/github.actions.results.api.v1.ArtifactService/, which the VPS's
+      # caddy allow-list carries for exactly this reason).
+      #
+      # Downgrading to @v3 would also dodge the check, by using the retired v3
+      # upload API. Deprecated upstream and a step backwards for no gain.
       - name: Publish
-        uses: actions/upload-artifact@v4
+        uses: https://code.forgejo.org/forgejo/upload-artifact@v5
         with:
           name: pages
           path: _site/
