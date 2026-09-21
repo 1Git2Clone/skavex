@@ -24,7 +24,8 @@ concurrency:
 jobs:
   check:
     name: Lint, test and evaluate
-    # Declared in the runner config as `nix:docker://nixos/nix:2.35.2`.
+    # Declared in the vps repo's modules/runner/ci-image.nix, and carrying both
+    # nix and node.
     #
     # NOT node-22, even though this is a Node package. That image has node but
     # no nix, so the toolchain CI uses would be whatever the image ships rather
@@ -33,34 +34,29 @@ jobs:
     # come from `nix develop`, so a green run means the same versions a
     # contributor gets.
     #
-    # The trade: nixos/nix carries nix, bash, gitMinimal, curl and coreutils and
-    # nothing else. No node in the JOB container itself — and every JavaScript
-    # action is run by a node binary inside it — so no step below can be a
-    # `uses:`, actions/checkout included.
-    runs-on: nix
+    # NOT `nix` either, which is what this job ran on until now. nixos/nix
+    # carries nix, bash, gitMinimal, curl and coreutils and nothing else — no
+    # node in the JOB container, and every JavaScript action is run by a node
+    # binary inside it, so on that label no step could be a `uses:` and the
+    # checkout had to be a hand-written `git fetch`. The node in this image only
+    # ever EXECUTES an action; the node this package is built and tested with
+    # still comes from `nix develop`, so the pinning argument above is untouched.
+    runs-on: nix-node
 
-    # The image ships no experimental features. NIX_CONFIG is merged with the
-    # image's /etc/nix/nix.conf rather than replacing it, which matters: that
-    # file sets `sandbox = false`, and the runner gives jobs `privileged:
-    # false`, so a build that tried to open a user namespace would fail.
-    env:
-      NIX_CONFIG: experimental-features = nix-command flakes
+    # NIX_CONFIG is deliberately absent. The nix-node image carries
+    # `experimental-features = nix-command flakes` in its own /etc/nix/nix.conf,
+    # and that file also sets `sandbox = false` — which is load-bearing, because
+    # the runner hands jobs `privileged: false` and a build that tried to open a
+    # user namespace would fail. Both properties are asserted by
+    # tests/ci-image.nix in the vps repo rather than restated here.
 
     steps:
-      # actions/checkout's replacement — see the `runs-on` note for why it
-      # cannot be the action.
-      #
-      # refs/pull/* is fetched alongside the branches so one command serves all
-      # three triggers: on a pull_request $GITHUB_SHA is the merge commit, which
-      # no branch reaches.
+      # The action, now that there is a node to execute it with. It resolves the
+      # pull_request case itself — on that trigger $GITHUB_SHA is a merge commit
+      # no branch reaches, which is why the fetch this replaces had to pull
+      # refs/pull/* alongside the branches.
       - name: Checkout
-        run: |
-          git init -q -b main .
-          git remote add origin "${{ github.server_url }}/${{ github.repository }}"
-          git fetch -q --prune --depth=1 origin \
-            "+refs/heads/*:refs/remotes/origin/*" \
-            "+refs/pull/*:refs/pull/*"
-          git checkout -q --detach "$GITHUB_SHA"
+        uses: actions/checkout@v7.0.1
 
       # --frozen-lockfile, so a dependency that drifted from the lockfile fails
       # here rather than resolving to something no one tested.

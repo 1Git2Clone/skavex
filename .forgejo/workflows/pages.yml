@@ -29,19 +29,17 @@ jobs:
     name: Build and publish the playground and the book
     # Same image as ci.yml, for the same reason: node and pnpm come from
     # flake.nix, so the demo is built with the toolchain the tests ran under.
-    # No node in the container means no `uses:` — hence the manual checkout.
-    runs-on: nix
+    # The image's own node is only there to execute JavaScript actions, which is
+    # what lets both the checkout and the publish below be a `uses:`.
+    runs-on: nix-node
 
-    env:
-      NIX_CONFIG: experimental-features = nix-command flakes
+    # NIX_CONFIG is deliberately absent — see the note in ci.yml. The image
+    # carries the experimental features and `sandbox = false` in its own
+    # /etc/nix/nix.conf.
 
     steps:
       - name: Checkout
-        run: |
-          git init -q -b main .
-          git remote add origin "${{ github.server_url }}/${{ github.repository }}"
-          git fetch -q --prune --depth=1 origin "+refs/heads/*:refs/remotes/origin/*"
-          git checkout -q --detach "$GITHUB_SHA"
+        uses: actions/checkout@v7.0.1
 
       - name: Install
         run: nix develop -c pnpm install --frozen-lockfile
@@ -97,19 +95,14 @@ jobs:
           cp -r docs/book/. _site/docs/
           cp -r coverage/lcov-report/. _site/coverage/
 
-      # upload-artifact is a JavaScript action, and this job runs on the `nix`
-      # label — nixos/nix carries no node, which is the same reason Checkout
-      # above is a hand-written `git fetch` rather than actions/checkout. The
-      # dev shell already has nodejs for pnpm, so put that one on PATH instead
-      # of pulling a second toolchain into the job.
-      - name: Put the dev shell's node on PATH for the upload action
-        run: |
-          node_bin=$(nix develop -c bash -c 'command -v node')
-          if [ -z "$node_bin" ]; then
-            echo "no node in the dev shell — upload-artifact cannot run" >&2
-            exit 1
-          fi
-          dirname "$node_bin" >> "$GITHUB_PATH"
+      # There used to be a step here that dug node out of the dev shell and
+      # appended it to $GITHUB_PATH, because upload-artifact is a JavaScript
+      # action and the `nix` label's image has no node to execute one with. The
+      # nix-node image does, so the step is gone rather than rewritten.
+      #
+      # It could never have been the general answer in any case: it ran
+      # `nix develop`, which needs the repo already checked out, so it could
+      # make a LATER action work but never the checkout itself.
 
       # forgejo/... AND NOT actions/..., which is not a mirror choice — it is
       # the only version of this action that can run here at all.
