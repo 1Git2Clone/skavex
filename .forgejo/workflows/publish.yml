@@ -58,20 +58,23 @@ concurrency:
 jobs:
   publish:
     name: Publish to the Forgejo package registry
-    runs-on: nix
+    runs-on: nix-node
 
-    env:
-      NIX_CONFIG: experimental-features = nix-command flakes
+    # NIX_CONFIG is deliberately absent — see the note in ci.yml. The image
+    # carries the experimental features and `sandbox = false` in its own
+    # /etc/nix/nix.conf.
 
     steps:
-      # Tags fetched as well as the commit: prepublishOnly runs the test suite,
-      # and pnpm wants to see the ref it is publishing from.
+      # fetch-tags keeps what the hand-written fetch did, rather than what this
+      # job can be argued down to. The tag/version check below reads $GITHUB_REF
+      # and `pnpm publish` runs with --no-git-checks, so nothing here provably
+      # needs a tag — but this is the one workflow that uploads a package under
+      # a version number, and trimming a fetch on the strength of an argument is
+      # not worth it when the fetch costs nothing.
       - name: Checkout
-        run: |
-          git init -q -b main .
-          git remote add origin "${{ github.server_url }}/${{ github.repository }}"
-          git fetch -q --tags origin "$GITHUB_SHA"
-          git checkout -q --detach "$GITHUB_SHA"
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-tags: true
 
       # Before anything is built or uploaded, because a missing token is a
       # configuration mistake and should not look like a publish failure three
