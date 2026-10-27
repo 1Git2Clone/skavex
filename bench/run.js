@@ -31,10 +31,12 @@ const SAMPLES = 7;
  */
 const GUARANTEES = {
 	// skavex and a working mdsvex sit at parity, trading places within about 15%
-	// run to run. The floor is set below that band on purpose: it is here to
-	// catch a change that makes skavex materially slower than the alternative,
-	// not to defend a lead that is inside the noise either way.
-	minSpeedRatioVsWorkingMdsvex: 0.9,
+	// run to run. The floor sits at the bottom of that band on purpose: it is
+	// here to catch a change that makes skavex materially slower than the
+	// alternative, not to defend a lead that is inside the noise either way.
+	// It was 0.9, inside the band, and failed CI at 0.89x on a commit that
+	// touched no code the benchmark runs.
+	minSpeedRatioVsWorkingMdsvex: 0.85,
 
 	// The bare pipeline is a floor rather than a rival: it escapes no prose,
 	// resolves no components, and its output does not compile. skavex costs more

@@ -173,9 +173,9 @@ What it does assert:
 
 - **A ratio**, measured in the same process on the same machine within seconds
   of itself, so a loaded box moves both numbers together. skavex must stay
-  above 0.9× the throughput of working mdsvex — a floor for catching a
-  pipeline change that makes it materially slower, well below the measured
-  1.0–1.15×.
+  above 0.85× the throughput of working mdsvex — a floor for catching a
+  pipeline change that makes it materially slower, below the measured
+  0.9–1.15×.
 - **Capability counts**, which are deterministic and so can be exact: rendered
   formulas, MathML nodes, heading ids, escaped prose, surviving component
   tags, and that the output compiles. Each one corresponds to something that
