@@ -9,7 +9,7 @@
 # The local hooks go through `nix develop -c`, NOT bare $PATH. A bare
 # `language: system` entry resolves whatever happens to be on the PATH of the
 # process invoking git, which for an editor or lazygit is not the dev shell —
-# so a different prettier or a different tsc answers, and the same commit
+# so a different formatter or a different tsc answers, and the same commit
 # passes in one place and fails in the other. Going through the flake means one
 # pinned version answers everywhere.
 #
@@ -43,19 +43,20 @@ repos:
 
   - repo: local
     hooks:
-      # Prettier and ESLint on the staged files only — the whole point of a
-      # commit hook is that it is fast enough not to be disabled.
-      - id: prettier
-        name: prettier
+      # Oxfmt and Oxlint on the staged files only — the whole point of a
+      # commit hook is that it is fast enough not to be disabled. Both read
+      # their settings from vite.config.js.
+      - id: oxfmt
+        name: oxfmt
         description: Formatting, the same run CI makes.
-        entry: nix develop -c pnpm exec prettier --check
+        entry: nix develop -c pnpm exec vp fmt --check
         language: system
-        files: \.(js|mjs|cjs|svelte|md|json|json5|ya?ml|css|html)$
+        files: \.(js|mjs|cjs|svelte|md|json|json5|ya?ml|toml|css|html)$
 
-      - id: eslint
-        name: eslint
+      - id: oxlint
+        name: oxlint
         description: Lint, including the repo-wide ban on `any`.
-        entry: nix develop -c pnpm exec eslint
+        entry: nix develop -c pnpm exec vp lint
         language: system
         files: \.(js|mjs|cjs|svelte)$
 

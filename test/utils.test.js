@@ -65,6 +65,7 @@ describe('escapeTemplateLiteral', () => {
 
 		expect(escaped).not.toMatch(/(^|[^\\])`/);
 		expect(escaped).not.toMatch(/(^|[^\\])\$\{/);
+		// oxlint-disable-next-line no-eval -- evaluating the escaped literal is the assertion.
 		expect(eval('`' + escaped + '`')).toBe('a ` b ${c} d \\ e');
 	});
 });

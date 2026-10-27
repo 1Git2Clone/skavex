@@ -235,7 +235,7 @@ export default function remarkHighlight() {
  *
  * Lives here rather than in the component that calls it because a `.svelte`
  * file cannot contain the string `</script>` without escaping it, and an
- * escape ESLint is right to call useless is a poor trade for one template.
+ * escape a linter is right to call useless is a poor trade for one template.
  *
  * @param {string} name What the new component is called.
  * @returns {string} Svelte source for it.

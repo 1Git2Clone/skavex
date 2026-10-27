@@ -10,7 +10,7 @@
 
 <!-- Check what you ran. Browser suite runs in CI either way. -->
 
-- [ ] `pnpm run lint` (prettier + eslint)
+- [ ] `pnpm run lint` (oxfmt + oxlint, through Vite+)
 - [ ] `pnpm run check` (tsc + svelte-check)
 - [ ] `pnpm test` (vitest)
 - [ ] `pnpm run test:e2e` (playwright, for UI/behavior changes)

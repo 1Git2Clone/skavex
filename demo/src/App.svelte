@@ -388,7 +388,6 @@
 								editor contents, so it is no more user-controlled than the pane
 								above.
 							-->
-							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							<a href="#{heading.id}">{@html heading.html}</a>
 						</li>
 					{/each}

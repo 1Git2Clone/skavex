@@ -16,8 +16,8 @@
  * build time and the browser is sent finished HTML.
  */
 
-/* eslint-disable svelte/no-svelte-internal --
-   The ban is correct for application code: these modules are private and
+/* svelte/internal, imported on purpose. Avoiding it is correct for
+   application code: these modules are private and
    Svelte 6 will move them. This module is not application code. It is a
    loader for output the Svelte compiler produced a moment ago, and that
    output imports these specifiers by name. Declining to provide them would

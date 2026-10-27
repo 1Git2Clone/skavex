@@ -65,7 +65,7 @@ jobs:
 
       # The same .pre-commit-config.yaml a contributor's commit hook runs, so a
       # check cannot pass locally and fail here through drift between two lists.
-      # This covers prettier and eslint, plus the things `pnpm lint` does not:
+      # This covers oxfmt and oxlint, plus the things `pnpm lint` does not:
       # merge-conflict markers, oversized files, and a gitleaks scan.
       #
       # PRE_COMMIT_HOME because the runner gives the job no writable HOME, and
@@ -79,12 +79,12 @@ jobs:
       - name: Types
         run: nix develop -c pnpm check
 
-      # `pnpm lint`, even though the Hooks step above already ran prettier and
-      # eslint. The two are not the same check and cannot substitute for each
+      # `pnpm lint`, even though the Hooks step above already ran oxfmt and
+      # oxlint. The two are not the same check and cannot substitute for each
       # other: pre-commit hands its hooks an explicit list of files derived from
-      # git, so it sees tracked files only, while `eslint .` walks the working
-      # tree — and eslint's flat config does not read .gitignore. Anything
-      # generated and untracked is therefore invisible to one and linted by the
+      # git, so it sees tracked files only, while `vp lint` walks the working
+      # tree. Oxlint skips what .gitignore lists, but a file that is generated,
+      # untracked and not ignored is still invisible to one and linted by the
       # other.
       #
       # AFTER Types on purpose. `pnpm check` is what writes demo/.svelte-check,

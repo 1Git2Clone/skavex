@@ -68,7 +68,7 @@ browsers and mdbook if you intend to run those parts.
 
 | Command               | What it does                                              |
 | --------------------- | --------------------------------------------------------- |
-| `pnpm lint`           | Prettier and ESLint                                       |
+| `pnpm lint`           | Oxfmt and Oxlint, through Vite+                           |
 | `pnpm check`          | Three typecheck passes: `src`, everything else, `.svelte` |
 | `pnpm test`           | Unit tests                                                |
 | `pnpm test:coverage`  | Unit tests with the coverage gate                         |
@@ -80,12 +80,12 @@ browsers and mdbook if you intend to run those parts.
 
 CI runs the pre-commit hooks, then `check`, `test:coverage`, `test:e2e`,
 `bench:check`, the docs build and `nix flake check`. There is no separate lint
-step: prettier and eslint run as hooks, from the same file your commit hook
+step: oxfmt and oxlint run as hooks, from the same file your commit hook
 uses, so the two lists cannot drift.
 
 ## What the checks expect
 
-- **No `any`.** `jsdoc/reject-any-type` is on across source, tests, benchmarks
+- **No `any`.** `jsdoc-js/reject-any-type` is on across source, tests, benchmarks
   and components. The types are the JSDoc; there is no separate declaration to
   drift from it.
 - **A cast is an assertion that the compiler is wrong.** `/** @type {X} */ (…)`
